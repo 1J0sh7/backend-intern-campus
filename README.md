@@ -1,19 +1,27 @@
 # backend-intern-campus
 
+
+
 Name : Joshua Tevera 
 
 
 my : Goal is to be able to create a clean readme file with daily logs and progress checklist started and also which is visually visible and smart and easy to understand.
 
 
+
  ## MY daily learning log
+
+
  
 | Date | Topic | Key Learnings 
 
 | 2026-08-03 | Orientation & Git Basics | Learned how to create a repo, a branch, and write a README
 
+
  
- links to all assignments.
+## links to all assignments.
+
+
  
 Text	GitHub Docs - Hello World	https://docs.github.com/en/get-started/start-your-journey/hello-world
 
