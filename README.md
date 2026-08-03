@@ -1,13 +1,17 @@
 # backend-intern-campus
 
-
 Name : Joshua Tevera 
 
 
 my : Goal is to be able to create a clean readme file with daily logs and progress checklist started and also which is visually visible and smart and easy to understand.
 
 
- daily learning log
+ ## MY daily learning log
+ 
+| Date | Topic | Key Learnings 
+
+| 2026-08-03 | Orientation & Git Basics | Learned how to create a repo, a branch, and write a README
+
  
  links to all assignments.
  
@@ -33,5 +37,3 @@ Video	Programming with Mosh - Git Tutorial	https://www.youtube.com/watch?v=8JJ10
 
 
 Video	Tech With Tim - Git and GitHub	https://www.youtube.com/watch?v=DVRQoVRzMIY
- 
- 
