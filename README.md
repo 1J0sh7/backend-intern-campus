@@ -15,7 +15,7 @@ my : Goal is to be able to create a clean readme file with daily logs and progre
  
 | Date | Topic | Key Learnings 
 
-| 2026-08-03 | Orientation & Git Basics | Learned how to create a repo, a branch, and write a README
+| 2026-08-03 | GithUB Basics | Learned how to create a repo, a branch and create a clean readme file
 
 
  
