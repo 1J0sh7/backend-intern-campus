@@ -1,7 +1,7 @@
 # backend-intern-campus
 
 
-
+ 
 Name : Joshua Tevera 
 
 
@@ -10,38 +10,29 @@ my : Goal is to be able to create a clean readme file with daily logs and progre
 
 
  ## MY daily learning log
-
-
  
-| Date | Topic | Key Learnings 
+#
+https://docs.google.com/spreadsheets/d/1t5ExFWL7RZqspPSg_IKEEuGTZmqhul2G/edit?usp=sharing&ouid=114738321139242338232&rtpof=true&sd=true
 
-| 2026-08-03 | GithUB Basics | Learned how to create a repo, a branch and create a clean readme file
+
+#
+## My detailed project cheklist
+#
+
+https://docs.google.com/spreadsheets/d/1t5ExFWL7RZqspPSg_IKEEuGTZmqhul2G/edit?usp=sharing&ouid=114738321139242338232&rtpof=true&sd=true
+
+## 
 
 
- 
+
 ## links to all assignments.
 
+## Phase 0  (Objective OC-001 ) 
+##
+Github Link  :  https://github.com/1J0sh7/backend-intern-campus/edit/main/README.md
+##
+## Phase 1 (Objective TL-001)
 
- 
-Text	GitHub Docs - Hello World	https://docs.github.com/en/get-started/start-your-journey/hello-world
+## phase 1 ( objective TL-002 )
+##
 
-
-Text	GitHub Docs - About READMEs	https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-readmes
-
-
-Text	Google Technical Writing Courses	https://developers.google.com/tech-writing
-
-
-Text	Atlassian - How to write a good README	https://www.atlassian.com/git/tutorials/learn-git-with-bitbucket-cloud
-
-
-Video	GitHub Skills	https://www.youtube.com/@GitHubSkills
-
-
-Video	freeCodeCamp - Git and GitHub for Beginners	https://www.youtube.com/watch?v=RGOj5yH7evk
-
-
-Video	Programming with Mosh - Git Tutorial	https://www.youtube.com/watch?v=8JJ101D3knE
-
-
-Video	Tech With Tim - Git and GitHub	https://www.youtube.com/watch?v=DVRQoVRzMIY
