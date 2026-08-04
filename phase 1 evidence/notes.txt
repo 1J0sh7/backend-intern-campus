@@ -1,0 +1,4 @@
+1,) the docker failed to start it wanted me first to enable virtuarlization which is by default turned off on windows
+2.) dockercommands only run when it its subprocess( docker app is running in background .)
+3.)
+
