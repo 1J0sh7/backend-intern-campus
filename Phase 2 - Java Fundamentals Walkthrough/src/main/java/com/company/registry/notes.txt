@@ -1,0 +1,74 @@
+JF-004 - Collections, Generics and Exceptions
+1. Collections (List)
+What Is It?
+A collection is a container that holds multiple objects. List is a type of collection that keeps items in order.
+
+Your Code:
+java
+private List<Customer> customers;
+Why Use It?
+Why	Explanation
+Store multiple items	Holds many customers
+Keep order	Customers stay in the order you add them
+Easy to loop through	Use for-each or stream to process all items
+2. Generics
+What Is It?
+Generics let you specify what type of objects a collection can hold. The <Customer> part tells Java: "This list can only hold Customer objects."
+
+Your Code:
+java
+private List<Customer> customers;
+Why Use It?
+Why	Explanation
+Type safety	Can't accidentally add wrong type
+No casting	Don't need to convert objects
+3. Optional
+What Is It?
+Optional is a container that may or may not hold a value. It forces you to handle the "not found" case.
+
+Your Code:
+java
+public Optional<Customer> findByEmail(String email) {
+    for (Customer c : customers) {
+        if (c.getEmail().equals(email)) {
+            return Optional.of(c);
+        }
+    }
+    return Optional.empty();
+}
+Why Use It?
+Why	Explanation
+Avoids null	No more null checks
+Forces handling	Must check if value exists
+Cleaner code	.ifPresent() is readable
+How to Use It:
+java
+registry.findByEmail("john@email.com").ifPresent(c -> System.out.println(c.getName()));
+4. Custom Exceptions
+What Is It?
+Custom exceptions are your own error types with specific messages.
+
+Your Code:
+java
+public class DuplicateCustomerException extends RuntimeException {
+    public DuplicateCustomerException(String message) {
+        super(message);
+    }
+}
+Why Use It?
+Why	Explanation
+Specific errors	"Email already exists" is clearer than generic "Error"
+Meaningful messages	Tells exactly what went wrong
+Easy to catch	Catch specific exception types
+Summary
+Concept	Your Code	What It Does
+List	private List<Customer> customers;	Holds many customers in order
+Generics	<Customer>	Ensures only Customer objects
+Optional	Optional<Customer>	Safely handles "not found"
+Custom Exception	DuplicateCustomerException	Gives specific error messages
+Why This Matters
+Concept	Why Important
+Collections	Real apps store lists of data
+Generics	Prevents errors at compile time
+Optional	No more null pointer exceptions
+Custom Exceptions	Clear error messages for debugging

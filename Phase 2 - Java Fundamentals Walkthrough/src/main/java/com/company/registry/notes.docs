@@ -1,0 +1,86 @@
+The Big Picture: What We Built
+We built a Customer Registry – a digital address book that stores customers and lets you manage them.
+
+In Simple Terms:
+Think of it like a phonebook app where you can:
+
+Add new contacts
+
+Find contacts by email
+
+Delete contacts
+
+See all contacts
+
+The 4 Main Things We Did
+#	What We Did	What It Does
+1	Stored customers in a List	Holds all customer data in order
+2	Used Generics (<Customer>)	Ensures only customers go in the list
+3	Used Optional	Safely handles "customer not found"
+4	Created Custom Exceptions	Gives specific error messages
+What Each File Does
+File	Purpose
+Customer.java	A customer (has name, email, phone)
+CustomerRegistry.java	The address book (add, find, delete)
+DuplicateCustomerException.java	Error when adding a customer that already exists
+CustomerNotFoundException.java	Error when trying to find/delete a customer that doesn't exist
+RegistryMain.java	Runs the program to test it
+CustomerRegistryTest.java	JUnit tests to verify everything works
+Concept Breakdown
+1. List (Collection)
+java
+private List<Customer> customers;
+What: A container that holds multiple customers
+
+Why: We need to store many customers, not just one
+
+How: Each customer gets added to the list
+
+2. Generics (<Customer>)
+java
+private List<Customer> customers;
+What: Tells Java this list can ONLY hold Customer objects
+
+Why: Prevents mistakes (can't add a String or Integer by accident)
+
+How: <Customer> is the generic type
+
+3. Optional
+java
+public Optional<Customer> findByEmail(String email)
+What: A box that may or may not contain a customer
+
+Why: Instead of returning null (which can crash), we return Optional.empty() when not found
+
+How: Caller must check if the customer exists using .isPresent() or .ifPresent()
+
+4. Custom Exceptions
+java
+public class DuplicateCustomerException extends RuntimeException
+What: Our own error type
+
+Why: Gives clear, specific error messages
+
+How: We throw it when something goes wrong (like duplicate email)
+
+How It All Works Together
+text
+1. User adds a customer → stored in List
+2. User finds by email → Optional returns customer or empty
+3. User tries to add duplicate → throws DuplicateCustomerException
+4. User tries to delete missing customer → throws CustomerNotFoundException
+5. Program prints all customers from List
+What We Tested
+Test	What It Checks
+Add customer	Customer is added to registry
+Add duplicate	Throws DuplicateCustomerException
+Find by email	Returns the correct customer
+Find not found	Returns Optional.empty()
+Delete by email	Removes customer from registry
+Delete not found	Throws CustomerNotFoundException
+Why This Matters for Backend Development
+Concept	Real Backend Use
+List	Storing records from database
+Generics	Type-safe data handling
+Optional	Safely handling missing data from database
+Custom Exceptions	Proper error handling in API responses

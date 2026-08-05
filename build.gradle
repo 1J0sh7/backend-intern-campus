@@ -13,6 +13,10 @@ repositories {
 dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.0'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.0'
+
+    // adding  a new dependancy(utility methods fetched somewhere)
+    implementation 'org.apache.commons:commons-lang3:3.14.0'
+
 }
 
 test {
@@ -21,4 +25,12 @@ test {
 
 application {
     mainClass = 'com.company.registry.RegistryMain'
+}
+
+jar {
+    manifest {
+        attributes(
+                'Main-Class': 'com.company.registry.RegistryMain'
+        )
+    }
 }
