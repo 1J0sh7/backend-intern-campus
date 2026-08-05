@@ -1,0 +1,19 @@
+Customer "John" applies for a loan of $500 for 4 months.
+ LoanApplication created with status PENDING.
+ Admin approves → status APPROVED.
+ John takes money → status ACTIVE.
+ Repayments are created each month.
+ John pays all → status COMPLETED.
+
+
+
+
+
+ then the flow
+
+ 1. Customer applies → status = PENDING
+ 2. Admin approves → status = APPROVED
+ 3. Customer takes loan → status = ACTIVE
+ 4. Customer pays back → status = COMPLETED
+    OR
+    Customer defaults → status = REJECTED (or defaulted)

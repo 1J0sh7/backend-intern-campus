@@ -10,7 +10,7 @@ This project demonstrates core Java concepts including encapsulation, inheritanc
 
 ## Compilation Process
 
-### What Happened When i Ran javac
+### What Happened When You Ran javac
 
 The javac command read your .java source files and converted them into bytecode (.class files).
 
@@ -23,7 +23,7 @@ javac -d . -sourcepath "Phase 2 - Java Fundamentals Walkthrough/src/main/java" "
 
 
 
-## The Error i Fixed
+## The Error You Fixed
 
 ### Error Message
 
@@ -59,7 +59,7 @@ Method signature - Method name plus parameter types must match exactly.
 
 ## Inheritance
 
-### How i Used It
+### How You Used It
 
 public class Address extends Customer {
 
@@ -81,7 +81,7 @@ Inheritance - Child gets ALL fields and methods from Parent.
 
 super() - Calls Parent constructor from Child.
 
-### Why i Used It
+### Why You Used It
 
 Address IS A Customer (has name, email, phone).
 
@@ -93,7 +93,7 @@ Inheritance allowed reuse without rewriting Customer fields.
 
 
 
-## What Happened When i Ran the Program
+## What Happened When You Ran the Program
 
 ### Command
 
@@ -121,7 +121,7 @@ public static void main(String[] args) - Required signature to run.
 
 
 
-## OOP Concepts i Demonstrated
+## OOP Concepts You Demonstrated
 
 ### Encapsulation
 

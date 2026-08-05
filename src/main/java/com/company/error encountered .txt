@@ -1,0 +1,19 @@
+Error Message:
+text
+error: constructor Customer in class Customer cannot be applied to given types
+required: String,String,String
+found: String,String,String,String
+What It Meant:
+Address.java tried to call super(name, email, phone, address)
+
+But Customer.java constructor only accepts 3 parameters: (name, email, phone)
+
+Java couldn't find a matching constructor
+
+The Fix:
+java
+// Before (wrong):
+super(name, email, phone, address);  // 4 parameters
+
+// After (correct):
+super(name, email, phone);  // 3 parameters
