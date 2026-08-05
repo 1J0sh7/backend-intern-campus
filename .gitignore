@@ -2,3 +2,10 @@
 .gradle/
 build/
 gradle-wrapper.jar
+
+*.class
+build/
+.gradle/
+*.log
+.idea/
+*.iml
