@@ -96,6 +96,23 @@ https://github.com/1J0sh7/backend-intern-campus/blob/main/packaging-and-deployme
 ```
 ##
 
+## 		Phase 4 - Git and Professional Workflow
+
+```
+https://github.com/1J0sh7/backend-intern-campus/tree/feature/phase-3
+
+```
+##
+
+
+## 	Phase 5 - Spring Boot Foundation
+
+```
+https://github.com/1J0sh7/backend-intern-campus/tree/feature/phase-5-spring-boot
+
+```
+##
+
 
 
 	
