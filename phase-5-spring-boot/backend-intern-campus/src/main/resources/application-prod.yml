@@ -1,6 +1,20 @@
+#server:
+#  port: 8082
+#
+#logging:
+#  level:
+#    root: INFO
+
+
 server:
   port: 8082
 
 logging:
   level:
     root: INFO
+
+springdoc:
+  api-docs:
+    enabled: false  # Disable Swagger in production
+  swagger-ui:
+    enabled: false

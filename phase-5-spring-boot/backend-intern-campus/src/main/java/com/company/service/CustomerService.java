@@ -1,5 +1,8 @@
 package com.company.service;
 
+import com.company.dto.CustomerRequest;
+import com.company.dto.CustomerResponse;
+import com.company.exception.DuplicateEmailException;
 import com.company.model.Customer;
 import org.springframework.stereotype.Service;
 
@@ -13,42 +16,63 @@ public class CustomerService {
     private List<Customer> customers = new ArrayList<>();
     private AtomicLong idCounter = new AtomicLong(1);
 
-    // Get all customers
-    public List<Customer> getAllCustomers() {
-        return customers;
+    private CustomerResponse toResponse(Customer customer) {
+        return new CustomerResponse(
+                customer.getId(),
+                customer.getName(),
+                customer.getEmail(),
+                customer.getPhone()
+        );
     }
 
-    // Get customer by ID
-    public Customer getCustomerById(Long id) {
-        for (Customer c : customers) {
-            if (c.getId().equals(id)) {
-                return c;
-            }
-        }
-        return null;
-    }
-
-    // Create a new customer
-    public Customer createCustomer(Customer customer) {
-        customer.setId(idCounter.getAndIncrement());
-        customers.add(customer);
+    private Customer toEntity(CustomerRequest request) {
+        Customer customer = new Customer();
+        customer.setName(request.getName());
+        customer.setEmail(request.getEmail());
+        customer.setPhone(request.getPhone());
         return customer;
     }
 
-    // Update an existing customer
-    public Customer updateCustomer(Long id, Customer updated) {
+    public List<CustomerResponse> getAllCustomers() {
+        return customers.stream()
+                .map(this::toResponse)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    public CustomerResponse getCustomerById(Long id) {
         for (Customer c : customers) {
             if (c.getId().equals(id)) {
-                c.setName(updated.getName());
-                c.setEmail(updated.getEmail());
-                c.setPhone(updated.getPhone());
-                return c;
+                return toResponse(c);
             }
         }
         return null;
     }
 
-    // Delete a customer
+    public CustomerResponse createCustomer(CustomerRequest request) {
+        for (Customer c : customers) {
+            if (c.getEmail().equals(request.getEmail())) {
+                throw new DuplicateEmailException("Customer with email " + request.getEmail() + " already exists");
+            }
+        }
+
+        Customer customer = toEntity(request);
+        customer.setId(idCounter.getAndIncrement());
+        customers.add(customer);
+        return toResponse(customer);
+    }
+
+    public CustomerResponse updateCustomer(Long id, CustomerRequest request) {
+        for (Customer c : customers) {
+            if (c.getId().equals(id)) {
+                c.setName(request.getName());
+                c.setEmail(request.getEmail());
+                c.setPhone(request.getPhone());
+                return toResponse(c);
+            }
+        }
+        return null;
+    }
+
     public boolean deleteCustomer(Long id) {
         for (Customer c : customers) {
             if (c.getId().equals(id)) {
