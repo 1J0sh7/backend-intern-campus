@@ -1,6 +1,24 @@
+#server:
+#  port: 8081
+#
+#logging:
+#  level:
+#    root: DEBUG
+
+
 server:
   port: 8081
 
 logging:
   level:
     root: DEBUG
+    com.company: DEBUG
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    operationsSorter: method

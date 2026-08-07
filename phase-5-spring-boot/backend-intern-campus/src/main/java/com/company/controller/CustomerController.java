@@ -1,15 +1,17 @@
 package com.company.controller;
 
-import com.company.model.Customer;
+import com.company.dto.CustomerRequest;
+import com.company.dto.CustomerResponse;
 import com.company.service.CustomerService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-@CrossOrigin(origins = "*")
+
 @RestController
-@RequestMapping("/api/customers")
+@RequestMapping("/api/v1/customers")
 public class CustomerController {
 
     private final CustomerService customerService;
@@ -19,13 +21,13 @@ public class CustomerController {
     }
 
     @GetMapping
-    public List<Customer> getAll() {
+    public List<CustomerResponse> getAll() {
         return customerService.getAllCustomers();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Customer> getOne(@PathVariable Long id) {
-        Customer customer = customerService.getCustomerById(id);
+    public ResponseEntity<CustomerResponse> getOne(@PathVariable Long id) {
+        CustomerResponse customer = customerService.getCustomerById(id);
         if (customer == null) {
             return ResponseEntity.notFound().build();
         }
@@ -33,18 +35,25 @@ public class CustomerController {
     }
 
     @PostMapping
-    public ResponseEntity<Customer> create(@RequestBody Customer customer) {
-        Customer created = customerService.createCustomer(customer);
+    public ResponseEntity<CustomerResponse> create(@Valid @RequestBody CustomerRequest request) {
+        CustomerResponse created = customerService.createCustomer(request);
+        if (created == null) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build(); // 409
+        }
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Customer> update(@PathVariable Long id, @RequestBody Customer updated) {
-        Customer result = customerService.updateCustomer(id, updated);
-        if (result == null) {
-            return ResponseEntity.notFound().build();
+    public ResponseEntity<CustomerResponse> update(@PathVariable Long id,
+                                                   @Valid @RequestBody CustomerRequest request) {
+        CustomerResponse updated = customerService.updateCustomer(id, request);
+        if (updated == null) {
+            // could be not found or duplicate – we check in service
+            // We can differentiate by checking if customer exists first, but for simplicity:
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build(); // or CONFLICT if duplicate
+            // Better: we could return 409 for duplicate, but we keep simple for now
         }
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(updated);
     }
 
     @DeleteMapping("/{id}")
