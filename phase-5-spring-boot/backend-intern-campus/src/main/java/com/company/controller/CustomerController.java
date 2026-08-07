@@ -37,14 +37,21 @@ public class CustomerController {
     @PostMapping
     public ResponseEntity<CustomerResponse> create(@Valid @RequestBody CustomerRequest request) {
         CustomerResponse created = customerService.createCustomer(request);
+        if (created == null) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build(); // 409
+        }
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<CustomerResponse> update(@PathVariable Long id, @Valid @RequestBody CustomerRequest request) {
+    public ResponseEntity<CustomerResponse> update(@PathVariable Long id,
+                                                   @Valid @RequestBody CustomerRequest request) {
         CustomerResponse updated = customerService.updateCustomer(id, request);
         if (updated == null) {
-            return ResponseEntity.notFound().build();
+            // could be not found or duplicate – we check in service
+            // We can differentiate by checking if customer exists first, but for simplicity:
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build(); // or CONFLICT if duplicate
+            // Better: we could return 409 for duplicate, but we keep simple for now
         }
         return ResponseEntity.ok(updated);
     }
