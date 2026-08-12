@@ -114,6 +114,14 @@ https://github.com/1J0sh7/backend-intern-campus/tree/feature/phase-5-spring-boot
 ##
 
 
+## 	Phase 6 
+
+```
+https://github.com/1J0sh7/backend-intern-campus/tree/main/Phase%206%20-%20HTTP%2C%20REST%20and%20API%20Design
+
+```
+##
+
 
 	
 
