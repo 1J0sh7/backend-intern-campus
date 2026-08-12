@@ -1,16 +1,16 @@
 # backend-intern-campus
 
 
- 
-Name : Joshua Tevera 
+
+Name : Joshua Tevera
 
 
 my : Goal is to be able to create a clean readme file with daily logs and progress checklist started and also which is visually visible and smart and easy to understand.
 
 
 
- ## MY daily learning log
- 
+## MY daily learning log
+
 #
 https://docs.google.com/spreadsheets/d/1t5ExFWL7RZqspPSg_IKEEuGTZmqhul2G/edit?usp=sharing&ouid=114738321139242338232&rtpof=true&sd=true
 
@@ -81,7 +81,7 @@ https://github.com/1J0sh7/backend-intern-campus/tree/main/Phase%202%20-%20Java%2
 ```
 ##
 
-## 	Phase 3  Gradle fundementals	
+## 	Phase 3  Gradle fundementals
 
 ```
 https://github.com/1J0sh7/backend-intern-campus/blob/main/basic-gradle.md	
