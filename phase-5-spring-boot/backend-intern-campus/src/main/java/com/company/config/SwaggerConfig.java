@@ -14,6 +14,6 @@ public class SwaggerConfig {
                 .info(new Info()
                         .title("Customer API")
                         .version("1.0")
-                        .description("Customer management API with validation, pagination, and filtering"));
+                        .description("Customer management API without validation, pagination, and filtering"));
     }
 }
