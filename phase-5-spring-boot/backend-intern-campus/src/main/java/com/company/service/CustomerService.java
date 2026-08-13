@@ -12,6 +12,9 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
+import java.util.Map;
+
+
 
 @Service
 public class CustomerService {
@@ -137,6 +140,39 @@ public class CustomerService {
 
     public boolean deleteCustomer(Long id) {
         return customers.removeIf(c -> c.getId().equals(id));
+    }
+// Patching updating customer with only one field changed
+
+    public CustomerResponse patchCustomer(Long id, Map<String, Object> updates) {
+        for (Customer c : customers) {
+            if (c.getId().equals(id)) {
+                // Check if phone is being updated
+                if (updates.containsKey("phone")) {
+                    String newPhone = (String) updates.get("phone");
+                    if (!c.getPhone().equals(newPhone)) {
+                        checkDuplicatePhoneForUpdate(id, newPhone);
+                    }
+                    c.setPhone(newPhone);
+                }
+
+                // Check if email is being updated
+                if (updates.containsKey("email")) {
+                    String newEmail = (String) updates.get("email");
+                    if (!c.getEmail().equalsIgnoreCase(newEmail)) {
+                        checkDuplicateEmailForUpdate(id, newEmail);
+                    }
+                    c.setEmail(newEmail);
+                }
+
+                // Check if name is being updated
+                if (updates.containsKey("name")) {
+                    c.setName((String) updates.get("name"));
+                }
+
+                return toResponse(c);
+            }
+        }
+        return null;
     }
 
     // PAGINATION
