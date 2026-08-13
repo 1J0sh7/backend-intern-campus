@@ -6,6 +6,9 @@ import com.company.dto.PageResponse;
 import com.company.exception.DuplicateEmailException;
 import com.company.model.Customer;
 import org.springframework.stereotype.Service;
+import com.company.exception.ValidationException;
+
+
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -141,6 +144,7 @@ public class CustomerService {
     public boolean deleteCustomer(Long id) {
         return customers.removeIf(c -> c.getId().equals(id));
     }
+
 // Patching updating customer with only one field changed
 
     public CustomerResponse patchCustomer(Long id, Map<String, Object> updates) {
@@ -149,6 +153,9 @@ public class CustomerService {
                 // Check if phone is being updated
                 if (updates.containsKey("phone")) {
                     String newPhone = (String) updates.get("phone");
+                    if (newPhone == null || newPhone.isEmpty()) {
+                        throw new ValidationException("Phone cannot be null or empty");
+                    }
                     if (!c.getPhone().equals(newPhone)) {
                         checkDuplicatePhoneForUpdate(id, newPhone);
                     }
@@ -158,6 +165,13 @@ public class CustomerService {
                 // Check if email is being updated
                 if (updates.containsKey("email")) {
                     String newEmail = (String) updates.get("email");
+                    if (newEmail == null || newEmail.isEmpty()) {
+                        throw new ValidationException("Email cannot be null or empty");
+                    }
+                    // Email format validation
+                    if (!isValidEmail(newEmail)) {
+                        throw new ValidationException("Email must be valid");
+                    }
                     if (!c.getEmail().equalsIgnoreCase(newEmail)) {
                         checkDuplicateEmailForUpdate(id, newEmail);
                     }
@@ -166,7 +180,11 @@ public class CustomerService {
 
                 // Check if name is being updated
                 if (updates.containsKey("name")) {
-                    c.setName((String) updates.get("name"));
+                    String newName = (String) updates.get("name");
+                    if (newName == null || newName.isEmpty()) {
+                        throw new ValidationException("Name cannot be null or empty");
+                    }
+                    c.setName(newName);
                 }
 
                 return toResponse(c);
@@ -220,7 +238,13 @@ public class CustomerService {
         return new PageResponse<>(responseContent, page, size, totalElements);
     }
 
-    //  HELPERS FOR SORTING
+    //  HELPERS
+    // email validation
+    private boolean isValidEmail(String email) {
+        String emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$";
+        return email.matches(emailRegex);
+    }
+    // FOR SORTING
 
     private Comparator<Customer> getComparator(String sort) {
         String[] sortParts = sort.split(",");
