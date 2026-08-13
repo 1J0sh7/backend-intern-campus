@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.Map;
 
+
 @RestController
 @RequestMapping("/api/v1/customers")
 
@@ -25,6 +26,8 @@ public class CustomerController {
     public CustomerController(CustomerService customerService) {
         this.customerService = customerService;
     }
+
+    //pagination
     @GetMapping
     public PageResponse<CustomerResponse> getAll(
             @RequestParam(defaultValue = "0") int page,
@@ -35,6 +38,7 @@ public class CustomerController {
 
         return customerService.getAllCustomers(page, size, name, email, sort);
     }
+// searching customerwith Id
 
     @GetMapping("/{id}")
     public ResponseEntity<CustomerResponse> getOne(@PathVariable Long id) {
@@ -45,6 +49,8 @@ public class CustomerController {
         return ResponseEntity.ok(customer);
     }
 
+    // Creating a customer
+
     @PostMapping
     public ResponseEntity<?> create(@Valid @RequestBody CustomerRequest request) {
         try {
@@ -54,6 +60,8 @@ public class CustomerController {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
         }
     }
+
+    //Updatting a customer.
 
     @PutMapping("/{id}")
     public ResponseEntity<?> update(@PathVariable Long id, @Valid @RequestBody CustomerRequest request) {
@@ -67,6 +75,25 @@ public class CustomerController {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
         }
     }
+
+
+    // Updating customer by PATCHING ONLY 1 entity or field  EDITED
+
+    @PatchMapping("/{id}")
+    public ResponseEntity<?> patch(@PathVariable Long id, @RequestBody Map<String, Object> updates) {
+        try {
+            CustomerResponse updated = customerService.patchCustomer(id, updates);
+            if (updated == null) {
+                return ResponseEntity.notFound().build();
+            }
+            return ResponseEntity.ok(updated);
+        } catch (DuplicateEmailException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
+        }
+    }
+
+
+    // Deleting a Customer
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
