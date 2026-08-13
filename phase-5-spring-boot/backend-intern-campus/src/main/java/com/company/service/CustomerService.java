@@ -2,10 +2,13 @@ package com.company.service;
 
 import com.company.dto.CustomerRequest;
 import com.company.dto.CustomerResponse;
+import com.company.dto.PageResponse;
+import com.company.exception.DuplicateEmailException;
 import com.company.model.Customer;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -15,6 +18,8 @@ public class CustomerService {
 
     private final List<Customer> customers = new ArrayList<>();
     private final AtomicLong idCounter = new AtomicLong(1);
+
+    // MAPPERS
 
     private CustomerResponse toResponse(Customer customer) {
         return new CustomerResponse(
@@ -33,12 +38,62 @@ public class CustomerService {
         return customer;
     }
 
+    // DUPLICATE CHECKS
+
+
+//email
+    private void checkDuplicateEmail(String email) {
+        for (Customer c : customers) {
+            if (c.getEmail().equalsIgnoreCase(email)) {
+                throw new DuplicateEmailException("Customer with that email " + email + " already exists");
+            }
+        }
+    }
+
+
+
+//phone number
+    private void checkDuplicatePhone(String phone) {
+        for (Customer c : customers) {
+            if (c.getPhone().equals(phone)) {
+                throw new DuplicateEmailException("Customer with that phone number " + phone + " already exists");
+            }
+        }
+    }
+
+
+
+// duplicate for update email
+    private void checkDuplicateEmailForUpdate(Long id, String email) {
+        for (Customer c : customers) {
+            if (c.getId().equals(id)) continue;
+            if (c.getEmail().equalsIgnoreCase(email)) {
+                throw new DuplicateEmailException("You cannot update with that email because it already exists");
+            }
+        }
+    }
+
+
+//duplicate for update phone number
+    private void checkDuplicatePhoneForUpdate(Long id, String phone) {
+        for (Customer c : customers) {
+            if (c.getId().equals(id)) continue;
+            if (c.getPhone().equals(phone)) {
+                throw new DuplicateEmailException("You cannot update with that phone number because it already exists");
+            }
+        }
+    }
+
+    // CRUD METHODS
+//getting all the customers
     public List<CustomerResponse> getAllCustomers() {
         return customers.stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
 
+
+//searching using id of customer
     public CustomerResponse getCustomerById(Long id) {
         return customers.stream()
                 .filter(c -> c.getId().equals(id))
@@ -46,33 +101,31 @@ public class CustomerService {
                 .map(this::toResponse)
                 .orElse(null);
     }
-
+// creating our customer
     public CustomerResponse createCustomer(CustomerRequest request) {
-        // Check for duplicate email
-        for (Customer c : customers) {
-            if (c.getEmail().equalsIgnoreCase(request.getEmail())) {
-                return null;  // Indicates duplicate
-            }
-        }
+        checkDuplicateEmail(request.getEmail());
+        checkDuplicatePhone(request.getPhone());
 
         Customer customer = toEntity(request);
         customer.setId(idCounter.getAndIncrement());
         customers.add(customer);
         return toResponse(customer);
     }
+// updating the customer
 
     public CustomerResponse updateCustomer(Long id, CustomerRequest request) {
         for (Customer c : customers) {
             if (c.getId().equals(id)) {
-                // Check duplicate email only if changed
+
+                // Only checking contents if the field has changed
+
                 if (!c.getEmail().equalsIgnoreCase(request.getEmail())) {
-                    for (Customer other : customers) {
-                        if (other.getId().equals(id)) continue;
-                        if (other.getEmail().equalsIgnoreCase(request.getEmail())) {
-                            return null; // duplicate email in update
-                        }
-                    }
+                    checkDuplicateEmailForUpdate(id, request.getEmail());
                 }
+                if (!c.getPhone().equals(request.getPhone())) {
+                    checkDuplicatePhoneForUpdate(id, request.getPhone());
+                }
+
                 c.setName(request.getName());
                 c.setEmail(request.getEmail());
                 c.setPhone(request.getPhone());
@@ -84,5 +137,78 @@ public class CustomerService {
 
     public boolean deleteCustomer(Long id) {
         return customers.removeIf(c -> c.getId().equals(id));
+    }
+
+    // PAGINATION
+
+    public PageResponse<CustomerResponse> getAllCustomers(
+            int page,
+            int size,
+            String name,
+            String email,
+            String sort) {
+
+        List<Customer> filtered = new ArrayList<>(customers);
+
+        // Filtering  by name
+        if (name != null && !name.isEmpty()) {
+            filtered = filtered.stream()
+                    .filter(c -> c.getName().toLowerCase().contains(name.toLowerCase()))
+                    .collect(Collectors.toList());
+        }
+
+        // Filter by email
+        if (email != null && !email.isEmpty()) {
+            filtered = filtered.stream()
+                    .filter(c -> c.getEmail().toLowerCase().contains(email.toLowerCase()))
+                    .collect(Collectors.toList());
+        }
+
+        // Sorting
+        if (sort != null && !sort.isEmpty()) {
+            filtered.sort(getComparator(sort));
+        }
+
+        // Paginate
+        long totalElements = filtered.size();
+        int totalPages = (int) Math.ceil((double) totalElements / size);
+        int start = Math.min(page * size, filtered.size());
+        int end = Math.min(start + size, filtered.size());
+
+        List<Customer> paginated = filtered.subList(start, end);
+
+        List<CustomerResponse> responseContent = paginated.stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+
+        return new PageResponse<>(responseContent, page, size, totalElements);
+    }
+
+    //  HELPERS FOR SORTING
+
+    private Comparator<Customer> getComparator(String sort) {
+        String[] sortParts = sort.split(",");
+        String field = sortParts[0];
+        String direction = sortParts.length > 1 ? sortParts[1] : "asc";
+
+        Comparator<Customer> comparator;
+        switch (field) {
+            case "name":
+                comparator = Comparator.comparing(Customer::getName, String.CASE_INSENSITIVE_ORDER);
+                break;
+            case "email":
+                comparator = Comparator.comparing(Customer::getEmail, String.CASE_INSENSITIVE_ORDER);
+                break;
+            case "id":
+            default:
+                comparator = Comparator.comparing(Customer::getId);
+                break;
+        }
+
+        if (direction.equalsIgnoreCase("desc")) {
+            comparator = comparator.reversed();
+        }
+
+        return comparator;
     }
 }
