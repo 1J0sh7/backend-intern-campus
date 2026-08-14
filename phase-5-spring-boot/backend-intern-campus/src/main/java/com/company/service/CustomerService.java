@@ -48,6 +48,7 @@ public class CustomerService {
 
 
 //email
+
     private void checkDuplicateEmail(String email) {
         for (Customer c : customers) {
             if (c.getEmail().equalsIgnoreCase(email)) {
@@ -59,6 +60,8 @@ public class CustomerService {
 
 
 //phone number
+
+
     private void checkDuplicatePhone(String phone) {
         for (Customer c : customers) {
             if (c.getPhone().equals(phone)) {
@@ -70,6 +73,8 @@ public class CustomerService {
 
 
 // duplicate for update email
+
+
     private void checkDuplicateEmailForUpdate(Long id, String email) {
         for (Customer c : customers) {
             if (c.getId().equals(id)) continue;
@@ -81,6 +86,8 @@ public class CustomerService {
 
 
 //duplicate for update phone number
+
+
     private void checkDuplicatePhoneForUpdate(Long id, String phone) {
         for (Customer c : customers) {
             if (c.getId().equals(id)) continue;
@@ -90,8 +97,10 @@ public class CustomerService {
         }
     }
 
+
     // CRUD METHODS
 //getting all the customers
+
     public List<CustomerResponse> getAllCustomers() {
         return customers.stream()
                 .map(this::toResponse)
@@ -100,6 +109,8 @@ public class CustomerService {
 
 
 //searching using id of customer
+
+
     public CustomerResponse getCustomerById(Long id) {
         return customers.stream()
                 .filter(c -> c.getId().equals(id))
@@ -107,7 +118,10 @@ public class CustomerService {
                 .map(this::toResponse)
                 .orElse(null);
     }
+
+
 // creating our customer
+
     public CustomerResponse createCustomer(CustomerRequest request) {
         checkDuplicateEmail(request.getEmail());
         checkDuplicatePhone(request.getPhone());
@@ -117,6 +131,8 @@ public class CustomerService {
         customers.add(customer);
         return toResponse(customer);
     }
+
+
 // updating the customer
 
     public CustomerResponse updateCustomer(Long id, CustomerRequest request) {
@@ -138,12 +154,14 @@ public class CustomerService {
                 return toResponse(c);
             }
         }
-        return null; // not found
+        return null; // not found (404)
     }
 
     public boolean deleteCustomer(Long id) {
         return customers.removeIf(c -> c.getId().equals(id));
     }
+
+
 
 // Patching updating customer with only one field changed
 
