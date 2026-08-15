@@ -1,1 +1,1 @@
-Users\USER\Desktop\backend-intern-campus\phase-5-spring-boot\backend-intern-campus>
+cd phase-5-spring-boot\backend-intern-campus

@@ -14,6 +14,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+
+
+
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -137,6 +141,21 @@ public class CustomerService {
         customerRepository.deleteById(id);
         return true;
     }
+
+
+
+
+
+
+
+    // new N+ 1 service
+    public List<CustomerResponse> getAllCustomersWithAddresses() {
+        List<Customer> customers = customerRepository.findAllWithAddress();
+        return customers.stream()
+                .map(this::toResponse)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
 
     // PATCH
     public CustomerResponse patchCustomer(Long id, Map<String, Object> updates) {
