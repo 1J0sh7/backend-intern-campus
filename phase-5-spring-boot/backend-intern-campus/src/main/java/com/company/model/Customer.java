@@ -2,9 +2,9 @@ package com.company.model;
 
 import jakarta.persistence.*;
 
+import java.util.ArrayList;
+import java.util.List;
 
-
-// creating my class as a database schema.
 @Entity
 @Table(name = "customers")
 public class Customer {
@@ -21,6 +21,12 @@ public class Customer {
 
     @Column(unique = true, nullable = false)
     private String phone;
+
+    @OneToOne(mappedBy = "customer", cascade = CascadeType.ALL)
+    private Address address;
+
+    @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL)
+    private List<LoanApplication> loanApplications = new ArrayList<>();
 
     // Constructors
     public Customer() {}
@@ -43,4 +49,12 @@ public class Customer {
 
     public String getPhone() { return phone; }
     public void setPhone(String phone) { this.phone = phone; }
+
+    public Address getAddress() { return address; }
+    public void setAddress(Address address) { this.address = address; }
+
+    public List<LoanApplication> getLoanApplications() { return loanApplications; }
+    public void setLoanApplications(List<LoanApplication> loanApplications) {
+        this.loanApplications = loanApplications;
+    }
 }
