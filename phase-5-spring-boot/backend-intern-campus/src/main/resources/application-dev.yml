@@ -1,11 +1,3 @@
-#server:
-#  port: 8081
-#
-#logging:
-#  level:
-#    root: DEBUG
-
-
 server:
   port: 8081
 
@@ -22,3 +14,20 @@ springdoc:
     enabled: true
     path: /swagger-ui.html
     operationsSorter: method
+
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/customer_db
+    username: postgres
+    password: josh
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
