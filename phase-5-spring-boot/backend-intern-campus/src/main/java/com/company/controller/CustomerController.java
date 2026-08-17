@@ -115,7 +115,7 @@ public class CustomerController {
         return ResponseEntity.noContent().build();
     }
 
-    // Handle validation errors manually
+    // Handle validation of  errors manually
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, String> handleValidationErrors(MethodArgumentNotValidException ex) {
