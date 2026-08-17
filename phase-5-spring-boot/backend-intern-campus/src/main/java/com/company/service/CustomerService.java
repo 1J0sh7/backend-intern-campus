@@ -92,6 +92,7 @@ public class CustomerService {
     }
 
     public CustomerResponse getCustomerById(Long id) {
+
         Customer customer = customerRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Customer with ID " + id + " not found"));
         return toResponse(customer);
