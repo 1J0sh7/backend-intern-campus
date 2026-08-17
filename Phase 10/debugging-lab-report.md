@@ -58,3 +58,21 @@ Customer customer = customerRepository.findById(id)
 - Valid ID → 200 OK
 
 - Invalid ID → 404 Not Found
+
+
+## Scenarios Debugged
+
+### 1. Controller-to-repository flow
+✅ Stepped through in debugger — works correctly
+
+### 2. NullPointerException
+✅ Fixed with `orElseThrow()` — returns 404 for invalid ID
+
+### 3. Bad validation
+✅ `@Valid` + `@NotBlank`, `@Email` — returns 400 with field errors
+
+### 4. Wrong repository query
+✅ Queries are correct — no issues found
+
+### 5. Failed integration call
+⏳ Not yet implemented — will be covered in Phase 14
