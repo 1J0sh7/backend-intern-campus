@@ -8,6 +8,14 @@ import com.company.exception.NotFoundException;
 import com.company.exception.ValidationException;
 import com.company.model.Customer;
 import com.company.repository.CustomerRepository;
+
+//imported logs
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -20,9 +28,16 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Map;
 
+
+
+
+
+
+
 @Service
 public class CustomerService {
 
+    private static final Logger log = LoggerFactory.getLogger(CustomerService.class);
     private final CustomerRepository customerRepository;
 
     public CustomerService(CustomerRepository customerRepository) {
@@ -49,6 +64,7 @@ public class CustomerService {
 
     // CRUD with filters
     public PageResponse<CustomerResponse> getAllCustomers(
+
             int page,
             int size,
             String name,
@@ -97,8 +113,14 @@ public class CustomerService {
                 .orElseThrow(() -> new NotFoundException("Customer with ID " + id + " not found"));
         return toResponse(customer);
     }
+//creating customers
 
     public CustomerResponse createCustomer(CustomerRequest request) {
+
+
+        // duplicate email check
+        log.debug("Checking for duplicate email: {}", request.getEmail());
+
         if (customerRepository.existsByEmail(request.getEmail())) {
             throw new DuplicateResourceException("Customer with that email already exists");
         }
@@ -108,7 +130,13 @@ public class CustomerService {
 
         Customer customer = toEntity(request);
         Customer saved = customerRepository.save(customer);
+        
+        if (log.isInfoEnabled()) {
+            log.info("Customer created with ID: {}", saved.getId());
+        }
         return toResponse(saved);
+        //saved
+
     }
 
     public CustomerResponse updateCustomer(Long id, CustomerRequest request) {
