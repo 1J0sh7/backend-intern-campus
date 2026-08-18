@@ -1,0 +1,58 @@
+
+2026-08-18 11:40:48 [http-nio-8081-exec-4] DEBUG [baa02803-afbd-426a-ae9b-58a22ae92bdb] org.hibernate.orm.sql.exec - Skipping reading Query result cache data: cache-enabled = false, cache-mode = NORMAL
+2026-08-18 11:40:48 [http-nio-8081-exec-4] DEBUG [baa02803-afbd-426a-ae9b-58a22ae92bdb] org.hibernate.SQL -
+    select
+        c1_0.id
+    from
+        customers c1_0
+    where
+        c1_0.phone=?
+    fetch
+        first ? rows only
+Hibernate:
+    select
+        c1_0.id
+    from
+        customers c1_0
+    where
+        c1_0.phone=?
+    fetch
+        first ? rows only
+2026-08-18 11:40:48 [http-nio-8081-exec-4] DEBUG [baa02803-afbd-426a-ae9b-58a22ae92bdb] org.hibernate.orm.results - Initializer list is empty
+2026-08-18 11:40:48 [http-nio-8081-exec-4] DEBUG [baa02803-afbd-426a-ae9b-58a22ae92bdb] o.s.orm.jpa.JpaTransactionManager - Found thread-bound EntityManager [SessionImpl(309254794<open>)] for JPA transaction
+2026-08-18 11:40:48 [http-nio-8081-exec-4] DEBUG [baa02803-afbd-426a-ae9b-58a22ae92bdb] o.s.orm.jpa.JpaTransactionManager - Creating new transaction with name [org.springframework.data.jpa.repository.support.SimpleJpaRepository.save]: PROPAGATION_REQUIRED,ISOLATION_DEFAULT
+2026-08-18 11:40:48 [http-nio-8081-exec-4] DEBUG [baa02803-afbd-426a-ae9b-58a22ae92bdb] o.h.e.t.internal.TransactionImpl - On TransactionImpl creation, JpaCompliance#isJpaTransactionComplianceEnabled == false
+2026-08-18 11:40:48 [http-nio-8081-exec-4] DEBUG [baa02803-afbd-426a-ae9b-58a22ae92bdb] o.h.e.t.internal.TransactionImpl - begin
+2026-08-18 11:40:48 [http-nio-8081-exec-4] DEBUG [baa02803-afbd-426a-ae9b-58a22ae92bdb] org.postgresql.jdbc.PgConnection -   setAutoCommit = false
+2026-08-18 11:40:48 [http-nio-8081-exec-4] DEBUG [baa02803-afbd-426a-ae9b-58a22ae92bdb] o.s.orm.jpa.JpaTransactionManager - Exposing JPA transaction as JDBC [org.springframework.orm.jpa.vendor.HibernateJpaDialect$HibernateConnectionHandle@45b591c4]
+2026-08-18 11:40:48 [http-nio-8081-exec-4] DEBUG [baa02803-afbd-426a-ae9b-58a22ae92bdb] o.h.j.i.PersistenceUnitUtilImpl - jakarta.persistence.PersistenceUnitUtil.getIdentifier is only intended to work with enhanced entities (although Hibernate also adapts this support to its proxies); however the passed entity was not enhanced (nor a proxy).. may not be able to read identifier
+2026-08-18 11:40:48 [http-nio-8081-exec-4] DEBUG [baa02803-afbd-426a-ae9b-58a22ae92bdb] o.hibernate.engine.spi.ActionQueue - Executing identity-insert immediately
+2026-08-18 11:40:48 [http-nio-8081-exec-4] DEBUG [baa02803-afbd-426a-ae9b-58a22ae92bdb] org.hibernate.SQL -
+    insert
+    into
+        customers
+        (email, name, phone)
+    values
+        (?, ?, ?)
+Hibernate:
+    insert
+    into
+        customers
+        (email, name, phone)
+    values
+        (?, ?, ?)
+2026-08-18 11:40:48 [http-nio-8081-exec-4] DEBUG [baa02803-afbd-426a-ae9b-58a22ae92bdb] org.hibernate.orm.results - Initializer list is empty
+2026-08-18 11:40:48 [http-nio-8081-exec-4] DEBUG [baa02803-afbd-426a-ae9b-58a22ae92bdb] o.h.id.IdentifierGeneratorHelper - Extracted generated values [com.company.model.Customer]: [Ljava.lang.Object;@43a8d27d
+2026-08-18 11:40:48 [http-nio-8081-exec-4] DEBUG [baa02803-afbd-426a-ae9b-58a22ae92bdb] o.s.orm.jpa.JpaTransactionManager - Initiating transaction commit
+2026-08-18 11:40:48 [http-nio-8081-exec-4] DEBUG [baa02803-afbd-426a-ae9b-58a22ae92bdb] o.s.orm.jpa.JpaTransactionManager - Committing JPA transaction on EntityManager [SessionImpl(309254794<open>)]
+2026-08-18 11:40:48 [http-nio-8081-exec-4] DEBUG [baa02803-afbd-426a-ae9b-58a22ae92bdb] o.h.e.t.internal.TransactionImpl - committing
+2026-08-18 11:40:48 [http-nio-8081-exec-4] DEBUG [baa02803-afbd-426a-ae9b-58a22ae92bdb] o.h.e.i.AbstractFlushingEventListener - Processing flush-time cascades
+2026-08-18 11:40:48 [http-nio-8081-exec-4] DEBUG [baa02803-afbd-426a-ae9b-58a22ae92bdb] o.h.e.i.AbstractFlushingEventListener - Dirty checking collections
+2026-08-18 11:40:48 [http-nio-8081-exec-4] DEBUG [baa02803-afbd-426a-ae9b-58a22ae92bdb] o.h.engine.internal.Collections - Collection found: [com.company.model.Customer.loanApplications#22], was: [<unreferenced>] (initialized)
+2026-08-18 11:40:48 [http-nio-8081-exec-4] DEBUG [baa02803-afbd-426a-ae9b-58a22ae92bdb] o.h.e.i.AbstractFlushingEventListener - Flushed: 0 insertions, 0 updates, 0 deletions to 1 objects
+2026-08-18 11:40:48 [http-nio-8081-exec-4] DEBUG [baa02803-afbd-426a-ae9b-58a22ae92bdb] o.h.e.i.AbstractFlushingEventListener - Flushed: 1 (re)creations, 0 updates, 0 removals to 1 collections
+2026-08-18 11:40:48 [http-nio-8081-exec-4] DEBUG [baa02803-afbd-426a-ae9b-58a22ae92bdb] o.h.internal.util.EntityPrinter - Listing entities:
+2026-08-18 11:40:48 [http-nio-8081-exec-4] DEBUG [baa02803-afbd-426a-ae9b-58a22ae92bdb] o.h.internal.util.EntityPrinter - com.company.model.Customer{address=null, phone=1234567890454, name=Testing corelation, loanApplications=[], id=22, email=john@email.com}
+2026-08-18 11:40:48 [http-nio-8081-exec-4] DEBUG [baa02803-afbd-426a-ae9b-58a22ae92bdb] org.postgresql.jdbc.PgConnection -   setAutoCommit = true
+2026-08-18 11:40:48 [http-nio-8081-exec-4] DEBUG [baa02803-afbd-426a-ae9b-58a22ae92bdb] o.s.orm.jpa.JpaTransactionManager - Not closing pre-bound JPA EntityManager after transaction
+2026-08-18 11:40:48 [http-nio-8081-exec-4] INFO  [baa02803-afbd-426a-ae9b-58a22ae92bdb] com.company.service.CustomerService - Customer created with ID: 22

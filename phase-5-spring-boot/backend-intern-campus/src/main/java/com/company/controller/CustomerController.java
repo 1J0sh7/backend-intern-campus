@@ -4,13 +4,20 @@ import com.company.dto.CustomerRequest;
 import com.company.dto.CustomerResponse;
 import com.company.dto.PageResponse;
 import com.company.dto.ErrorResponse;
-import com.company.exception.DuplicateEmailException;
+
+
 import com.company.service.CustomerService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
+
+
+//importing logs
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 
@@ -26,6 +33,10 @@ import java.util.Map;
 
 // the main class
 public class CustomerController {
+    //Logger class
+
+    private static final Logger log = LoggerFactory.getLogger(CustomerController.class);
+
 
     private final CustomerService customerService;
 
@@ -60,6 +71,9 @@ public class CustomerController {
     // Creating a customer
     @PostMapping
     public ResponseEntity<CustomerResponse> create(@Valid @RequestBody CustomerRequest request) {
+        // adding simple log
+        log.info("Received request to create customer with email: {}", request.getEmail());
+
         CustomerResponse created = customerService.createCustomer(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
