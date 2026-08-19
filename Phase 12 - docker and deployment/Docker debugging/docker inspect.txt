@@ -1,0 +1,169 @@
+
+
+2026-08-19 08:19:28 [main] ERROR [] o.s.boot.SpringApplication - Application run failed
+org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'entityManagerFactory' defined in class path resource [org/springframework/boot/autoconfigure/orm/jpa/HibernateJpaConfiguration.class]: [PersistenceUnit: default] Unable to build Hibernate SessionFactory; nested exception is org.hibernate.exception.JDBCConnectionException: Unable to open JDBC Connection for DDL execution [Connection to localhost:5432 refused. Check that the hostname and port are correct and that the postmaster is accepting TCP/IP connections.] [n/a]
+        at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.initializeBean(AbstractAutowireCapableBeanFactory.java:1812)
+        at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:601)
+        at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:523)
+        at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:339)
+        at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:346)
+        at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:337)
+        at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:207)
+        at org.springframework.context.support.AbstractApplicationContext.finishBeanFactoryInitialization(AbstractApplicationContext.java:970)
+        at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:627)
+        at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.refresh(ServletWebServerApplicationContext.java:146)
+        at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:752)
+        at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:439)
+        at org.springframework.boot.SpringApplication.run(SpringApplication.java:318)
+        at org.springframework.boot.SpringApplication.run(SpringApplication.java:1361)
+        at org.springframework.boot.SpringApplication.run(SpringApplication.java:1350)
+        at com.company.BackendInternCampusApplication.main(BackendInternCampusApplication.java:10)
+        at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+        at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+        at org.springframework.boot.loader.launch.Launcher.launch(Launcher.java:102)
+        at org.springframework.boot.loader.launch.Launcher.launch(Launcher.java:64)
+        at org.springframework.boot.loader.launch.JarLauncher.main(JarLauncher.java:40)
+Caused by: jakarta.persistence.PersistenceException: [PersistenceUnit: default] Unable to build Hibernate SessionFactory; nested exception is org.hibernate.exception.JDBCConnectionException: Unable to open JDBC Connection for DDL execution [Connection to localhost:5432 refused. Check that the hostname and port are correct and that the postmaster is accepting TCP/IP connections.] [n/a]
+        at org.springframework.orm.jpa.AbstractEntityManagerFactoryBean.buildNativeEntityManagerFactory(AbstractEntityManagerFactoryBean.java:431)
+        at org.springframework.orm.jpa.AbstractEntityManagerFactoryBean.afterPropertiesSet(AbstractEntityManagerFactoryBean.java:400)
+        at org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean.afterPropertiesSet(LocalContainerEntityManagerFactoryBean.java:366)
+        at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.invokeInitMethods(AbstractAutowireCapableBeanFactory.java:1859)
+        at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.initializeBean(AbstractAutowireCapableBeanFactory.java:1808)
+        ... 20 common frames omitted
+Caused by: org.hibernate.exception.JDBCConnectionException: Unable to open JDBC Connection for DDL execution [Connection to localhost:5432 refused. Check that the hostname and port are correct and that the postmaster is accepting TCP/IP connections.] [n/a]
+        at org.hibernate.exception.internal.SQLStateConversionDelegate.convert(SQLStateConversionDelegate.java:100)
+        at org.hibernate.exception.internal.StandardSQLExceptionConverter.convert(StandardSQLExceptionConverter.java:58)
+        at org.hibernate.engine.jdbc.spi.SqlExceptionHelper.convert(SqlExceptionHelper.java:108)
+        at org.hibernate.engine.jdbc.spi.SqlExceptionHelper.convert(SqlExceptionHelper.java:94)
+        at org.hibernate.resource.transaction.backend.jdbc.internal.DdlTransactionIsolatorNonJtaImpl.getIsolatedConnection(DdlTransactionIsolatorNonJtaImpl.java:74)
+        at org.hibernate.resource.transaction.backend.jdbc.internal.DdlTransactionIsolatorNonJtaImpl.getIsolatedConnection(DdlTransactionIsolatorNonJtaImpl.java:39)
+        at org.hibernate.tool.schema.internal.exec.ImprovedExtractionContextImpl.getJdbcConnection(ImprovedExtractionContextImpl.java:63)
+        at org.hibernate.tool.schema.extract.spi.ExtractionContext.getQueryResults(ExtractionContext.java:43)
+        at org.hibernate.tool.schema.extract.internal.SequenceInformationExtractorLegacyImpl.extractMetadata(SequenceInformationExtractorLegacyImpl.java:39)
+        at org.hibernate.tool.schema.extract.internal.DatabaseInformationImpl.initializeSequences(DatabaseInformationImpl.java:66)
+        at org.hibernate.tool.schema.extract.internal.DatabaseInformationImpl.<init>(DatabaseInformationImpl.java:60)
+        at org.hibernate.tool.schema.internal.Helper.buildDatabaseInformation(Helper.java:185)
+        at org.hibernate.tool.schema.internal.AbstractSchemaMigrator.doMigration(AbstractSchemaMigrator.java:93)
+        at org.hibernate.tool.schema.spi.SchemaManagementToolCoordinator.performDatabaseAction(SchemaManagementToolCoordinator.java:280)
+        at org.hibernate.tool.schema.spi.SchemaManagementToolCoordinator.lambda$process$5(SchemaManagementToolCoordinator.java:144)
+        at java.base/java.util.HashMap.forEach(HashMap.java:1429)
+        at org.hibernate.tool.schema.spi.SchemaManagementToolCoordinator.process(SchemaManagementToolCoordinator.java:141)
+        at org.hibernate.boot.internal.SessionFactoryObserverForSchemaExport.sessionFactoryCreated(SessionFactoryObserverForSchemaExport.java:37)
+        at org.hibernate.internal.SessionFactoryObserverChain.sessionFactoryCreated(SessionFactoryObserverChain.java:35)
+        at org.hibernate.internal.SessionFactoryImpl.<init>(SessionFactoryImpl.java:324)
+        at org.hibernate.boot.internal.SessionFactoryBuilderImpl.build(SessionFactoryBuilderImpl.java:463)
+        at org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl.build(EntityManagerFactoryBuilderImpl.java:1517)
+        at org.springframework.orm.jpa.vendor.SpringHibernateJpaPersistenceProvider.createContainerEntityManagerFactory(SpringHibernateJpaPersistenceProvider.java:66)
+        at org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean.createNativeEntityManagerFactory(LocalContainerEntityManagerFactoryBean.java:390)
+        at org.springframework.orm.jpa.AbstractEntityManagerFactoryBean.buildNativeEntityManagerFactory(AbstractEntityManagerFactoryBean.java:419)
+        ... 24 common frames omitted
+Caused by: org.postgresql.util.PSQLException: Connection to localhost:5432 refused. Check that the hostname and port are correct and that the postmaster is accepting TCP/IP connections.
+        at org.postgresql.core.v3.ConnectionFactoryImpl.openConnectionImpl(ConnectionFactoryImpl.java:346)
+        at org.postgresql.core.ConnectionFactory.openConnection(ConnectionFactory.java:54)
+        at org.postgresql.jdbc.PgConnection.<init>(PgConnection.java:273)
+        at org.postgresql.Driver.makeConnection(Driver.java:446)
+        at org.postgresql.Driver.connect(Driver.java:298)
+        at com.zaxxer.hikari.util.DriverDataSource.getConnection(DriverDataSource.java:137)
+        at com.zaxxer.hikari.pool.PoolBase.newConnection(PoolBase.java:360)
+        at com.zaxxer.hikari.pool.PoolBase.newPoolEntry(PoolBase.java:202)
+        at com.zaxxer.hikari.pool.HikariPool.createPoolEntry(HikariPool.java:461)
+        at com.zaxxer.hikari.pool.HikariPool.checkFailFast(HikariPool.java:550)
+        at com.zaxxer.hikari.pool.HikariPool.<init>(HikariPool.java:98)
+        at com.zaxxer.hikari.HikariDataSource.getConnection(HikariDataSource.java:111)
+        at org.hibernate.engine.jdbc.connections.internal.DatasourceConnectionProviderImpl.getConnection(DatasourceConnectionProviderImpl.java:126)
+        at org.hibernate.engine.jdbc.env.internal.JdbcEnvironmentInitiator$ConnectionProviderJdbcConnectionAccess.obtainConnection(JdbcEnvironmentInitiator.java:467)
+        at org.hibernate.resource.transaction.backend.jdbc.internal.DdlTransactionIsolatorNonJtaImpl.getIsolatedConnection(DdlTransactionIsolatorNonJtaImpl.java:46)
+        ... 44 common frames omitted
+Caused by: java.net.ConnectException: Connection refused
+        at java.base/sun.nio.ch.Net.pollConnect(Native Method)
+        at java.base/sun.nio.ch.Net.pollConnectNow(Net.java:694)
+        at java.base/sun.nio.ch.NioSocketImpl.timedFinishConnect(NioSocketImpl.java:542)
+        at java.base/sun.nio.ch.NioSocketImpl.connect(NioSocketImpl.java:592)
+        at java.base/java.net.SocksSocketImpl.connect(SocksSocketImpl.java:327)
+        at java.base/java.net.Socket.connect(Socket.java:751)
+        at org.postgresql.core.PGStream.createSocket(PGStream.java:243)
+        at org.postgresql.core.PGStream.<init>(PGStream.java:98)
+        at org.postgresql.core.v3.ConnectionFactoryImpl.tryConnect(ConnectionFactoryImpl.java:136)
+        at org.postgresql.core.v3.ConnectionFactoryImpl.openConnectionImpl(ConnectionFactoryImpl.java:262)
+        ... 58 common frames omitted
+
+C:\Users\USER\Desktop>docker inspect
+docker: 'docker inspect' requires at least 1 argument
+
+Usage:  docker inspect [OPTIONS] NAME|ID [NAME|ID...]
+
+See 'docker inspect --help' for more information
+
+C:\Users\USER\Desktop>docker inspect backend-app
+[
+    {
+        "Id": "sha256:af7bb26dae0e3887ef0deacbfaa74baae4ce8030eba0e5c542654735b725227f",
+        "RepoTags": [
+            "backend-app:latest"
+        ],
+        "RepoDigests": [
+            "backend-app@sha256:af7bb26dae0e3887ef0deacbfaa74baae4ce8030eba0e5c542654735b725227f"
+        ],
+        "Comment": "buildkit.dockerfile.v0",
+        "Created": "2026-08-19T08:15:19.247712838Z",
+        "Config": {
+            "ExposedPorts": {
+                "8081/tcp": {}
+            },
+            "Env": [
+                "PATH=/opt/java/openjdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "JAVA_HOME=/opt/java/openjdk",
+                "LANG=en_US.UTF-8",
+                "LANGUAGE=en_US:en",
+                "LC_ALL=en_US.UTF-8",
+                "JAVA_VERSION=jdk-21.0.11+10"
+            ],
+            "Entrypoint": [
+                "java",
+                "-jar",
+                "app.jar"
+            ],
+            "WorkingDir": "/app",
+            "Labels": {
+                "org.opencontainers.image.created": "2026-07-24T12:48:28.650696+00:00",
+                "org.opencontainers.image.description": "The Ubuntu container image maintained by Canonical\n\nUbuntu is a Debian-based Linux operating system that runs from the desktop to the cloud, to all your internet connected things.\nIt is the world's most popular operating system across public clouds and OpenStack clouds.\nIt is the number one platform for containers; from Docker to Kubernetes to LXD, Ubuntu can run your containers at scale.\nFast, secure and simple, Ubuntu powers millions of PCs worldwide.\n",
+                "org.opencontainers.image.title": "ubuntu",
+                "org.opencontainers.image.version": "26.04"
+            }
+        },
+        "Architecture": "amd64",
+        "Os": "linux",
+        "Size": 287423766,
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:24d9bad9efb08e44497f74cc79f9b0400818037a24628fd910db9145e5048649",
+                "sha256:d474aac4fedc48314243c3b7171e47cc0ce524fe5ad4bfb97745d08dafca9325",
+                "sha256:c5eb51555a5a4de2b78493aff0436b67d016aa4fd614c08b849629eb68ae5ca3",
+                "sha256:a506d4630afe80d1ccd99f5c6efc16549e1b6fbdeeba71cf648d957cbf2e7d4a",
+                "sha256:143842c5c9a7350d9e4ad85062a9d549e47a49be793391d136f108a997428393",
+                "sha256:917e7f74e27a91af371eb47df9eccda28b03650fca8240cf6aefb3cbbf3ea13d",
+                "sha256:1187ed87aefaddc029ed80594fb5addd5f27adb10a3a5cdb68c1b6bc5591e939",
+                "sha256:c928554e427e335568c9a8cd2ce78b8dd63a5047522f620474c5888be9dd0df2"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "2026-08-19T08:15:23.328329512Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.index.v1+json",
+            "digest": "sha256:af7bb26dae0e3887ef0deacbfaa74baae4ce8030eba0e5c542654735b725227f",
+            "size": 856
+        },
+        "Identity": {
+            "Build": [
+                {
+                    "Ref": "jzyfncn5z8j1rc410e13qxs35",
+                    "CreatedAt": "2026-08-19T08:15:24.033694347Z"
+                }
+            ]
+        }
+    }
+]
+
+C:\Users\USER\Desktop>

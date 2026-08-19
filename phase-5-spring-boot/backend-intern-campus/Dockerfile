@@ -1,27 +1,33 @@
-# Stage 1 : Downloading the dependencies
-# Use Java 21
+# Stage 1: Build the JAR
+FROM eclipse-temurin:21-jdk AS builder
+
+WORKDIR /app
+COPY . .
+
+# Make gradlew executable and build the JAR
+RUN chmod +x gradlew
+RUN ./gradlew clean build -x test
+
+
+
+
+# Stage 2: Run the JAR
 FROM eclipse-temurin:21-jdk
 
 
-
-# Set working directory
+# ininitialising work directory
 WORKDIR /app
 
 
-
-# Stage 2 : Build the application
-# Copy the JAR file
-COPY build/libs/*.jar app.jar
+# Copy the built JAR from the builder stage
+COPY --from=builder /app/build/libs/*.jar app.jar
 
 
 
-
-# Expose port 8081
+# port mapping
 EXPOSE 8081
 
 
 
-
-# Stage 3 : RUN the application
-# Run the app
+#running the app
 ENTRYPOINT ["java", "-jar", "app.jar"]
