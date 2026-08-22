@@ -1,6 +1,6 @@
-
 package com.company.service;
 
+import com.company.model.User;
 import com.company.repository.UserRepository;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -18,7 +18,15 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        return userRepository.findByUsername(username)
+        System.out.println("=== LOADING USER ===");
+        System.out.println("Username: " + username);
+
+        User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+
+        System.out.println("User found: " + user.getUsername());
+        System.out.println("Password hash: " + user.getPassword());
+
+        return user;
     }
 }
