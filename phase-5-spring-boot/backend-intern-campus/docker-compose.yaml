@@ -23,6 +23,7 @@ services:
     container_name: customer_api
     ports:
       - "8081:8081"
+      - "5005:5005" # for debugging 
     depends_on:
       postgres:
         condition: service_healthy
@@ -31,6 +32,7 @@ services:
       DB_URL: ${DB_URL}
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
+      JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
 
 volumes:
   postgres_data:
