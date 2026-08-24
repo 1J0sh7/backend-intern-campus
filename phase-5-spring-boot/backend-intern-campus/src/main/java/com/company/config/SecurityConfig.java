@@ -6,6 +6,7 @@ import com.company.security.JwtAuthenticationFilter;
 import com.company.service.CustomUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -24,12 +25,12 @@ public class SecurityConfig {
     private final CustomUserDetailsService userDetailsService;
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final CustomAuthenticationEntryPoint authenticationEntryPoint;
-    private final CustomAccessDeniedHandler accessDeniedHandler;  // ← ADD THIS
+    private final CustomAccessDeniedHandler accessDeniedHandler;
 
     public SecurityConfig(CustomUserDetailsService userDetailsService,
                           JwtAuthenticationFilter jwtAuthFilter,
                           CustomAuthenticationEntryPoint authenticationEntryPoint,
-                          CustomAccessDeniedHandler accessDeniedHandler) {  // ← ADD THIS
+                          CustomAccessDeniedHandler accessDeniedHandler) {
         this.userDetailsService = userDetailsService;
         this.jwtAuthFilter = jwtAuthFilter;
         this.authenticationEntryPoint = authenticationEntryPoint;
@@ -61,13 +62,22 @@ public class SecurityConfig {
                 .formLogin(form -> form.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(exception -> exception
-                        .authenticationEntryPoint(authenticationEntryPoint)  // 401 when you are not autharised and not logged in
-                        .accessDeniedHandler(accessDeniedHandler)          // 403 maybe you are logged in but you dont have the right access
+                        .authenticationEntryPoint(authenticationEntryPoint)
+                        .accessDeniedHandler(accessDeniedHandler)
                 )
                 .authorizeHttpRequests(auth -> auth
+                        // Public endpoints
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                        .requestMatchers("/api/v1/customers/**").hasRole("ADMIN")
+
+                        // Customer endpoints — role-based
+                        .requestMatchers(HttpMethod.POST, "/api/v1/customers").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/customers").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/customers/{id}").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/customers/{id}").authenticated()
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/customers/{id}").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/customers/{id}").hasRole("ADMIN")
+
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())

@@ -1,7 +1,6 @@
 package com.company.model;
 
 import jakarta.persistence.*;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,6 +26,11 @@ public class Customer {
 
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL)
     private List<LoanApplication> loanApplications = new ArrayList<>();
+
+    // NEW: Link to User
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User user;
 
     // Constructors
     public Customer() {}
@@ -56,5 +60,14 @@ public class Customer {
     public List<LoanApplication> getLoanApplications() { return loanApplications; }
     public void setLoanApplications(List<LoanApplication> loanApplications) {
         this.loanApplications = loanApplications;
+    }
+
+    // NEW: User getter and setter
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
     }
 }
