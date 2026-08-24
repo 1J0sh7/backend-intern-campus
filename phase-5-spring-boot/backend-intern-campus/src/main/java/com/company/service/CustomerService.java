@@ -7,7 +7,16 @@ import com.company.exception.DuplicateResourceException;
 import com.company.exception.NotFoundException;
 import com.company.exception.ValidationException;
 import com.company.model.Customer;
+import com.company.model.User;
 import com.company.repository.CustomerRepository;
+import com.company.repository.UserRepository;   // ← NEW import
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+
+
+
+
 
 //imported logs
 
@@ -39,9 +48,11 @@ public class CustomerService {
 
     private static final Logger log = LoggerFactory.getLogger(CustomerService.class);
     private final CustomerRepository customerRepository;
+    private final UserRepository userRepository;   //
 
-    public CustomerService(CustomerRepository customerRepository) {
+    public CustomerService(CustomerRepository customerRepository, UserRepository userRepository) {  // ← UPDATED constructor
         this.customerRepository = customerRepository;
+        this.userRepository = userRepository;      //
     }
 
     // Mappers
@@ -107,19 +118,44 @@ public class CustomerService {
         );
     }
 
-    public CustomerResponse getCustomerById(Long id) {
 
+    // flters involved
+    public CustomerResponse getCustomerById(Long id) {
         Customer customer = customerRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Customer with ID " + id + " not found"));
+
+        User currentUser = getCurrentUser();
+
+        // If the customer has no user, only ADMIN can view it
+        if (customer.getUser() == null) {
+            if (!isAdmin()) {
+                throw new AccessDeniedException("This customer has no owner. Only ADMIN can view it.");
+            }
+            return toResponse(customer);  // ADMIN can view orphaned customers
+        }
+
+        // Normal ownership check
+        if (!isAdmin() && !customer.getUser().getId().equals(currentUser.getId())) {
+            throw new AccessDeniedException("You can only view your own profile");
+        }
+
         return toResponse(customer);
     }
-//creating customers
 
+
+
+    //creating customers
     public CustomerResponse createCustomer(CustomerRequest request) {
-
-
         // duplicate email check
         log.debug("Checking for duplicate email: {}", request.getEmail());
+
+        // Get the current logged-in user
+        User currentUser = getCurrentUser();
+
+        // Check if user already has a customer profile
+        if (customerRepository.existsByUserId(currentUser.getId())) {
+            throw new ValidationException("You already have a customer profile. You cannot create another one.");
+        }
 
         if (customerRepository.existsByEmail(request.getEmail())) {
             throw new DuplicateResourceException("Customer with that email already exists");
@@ -129,19 +165,36 @@ public class CustomerService {
         }
 
         Customer customer = toEntity(request);
+        customer.setUser(currentUser);   // ← THIS IS THE FIX
+
         Customer saved = customerRepository.save(customer);
-        
+
         if (log.isInfoEnabled()) {
             log.info("Customer created with ID: {}", saved.getId());
         }
         return toResponse(saved);
-        //saved
-
     }
 
+
+    // updating with filters ...
     public CustomerResponse updateCustomer(Long id, CustomerRequest request) {
         Customer existing = customerRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Customer with ID " + id + " not found"));
+
+        User currentUser = getCurrentUser();
+
+        // If customer has no user, only ADMIN can update
+        if (existing.getUser() == null) {
+            if (!isAdmin()) {
+                throw new AccessDeniedException("This customer has no owner. Only ADMIN can update it.");
+            }
+            // ADMIN can update orphaned customer
+        } else {
+            // Normal ownership check
+            if (!isAdmin() && !existing.getUser().getId().equals(currentUser.getId())) {
+                throw new AccessDeniedException("You can only update your own profile");
+            }
+        }
 
         if (!existing.getEmail().equalsIgnoreCase(request.getEmail())) {
             if (customerRepository.existsByEmail(request.getEmail())) {
@@ -163,10 +216,20 @@ public class CustomerService {
         return toResponse(updated);
     }
 
+
+
+
+
+    // deleting
     public boolean deleteCustomer(Long id) {
-        if (!customerRepository.existsById(id)) {
-            throw new NotFoundException("Customer with ID " + id + " not found");
+        Customer existing = customerRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Customer with ID " + id + " not found"));
+
+        // Only ADMIN can delete
+        if (!isAdmin()) {
+            throw new AccessDeniedException("Only ADMIN can delete customers");
         }
+
         customerRepository.deleteById(id);
         return true;
     }
@@ -190,6 +253,21 @@ public class CustomerService {
     public CustomerResponse patchCustomer(Long id, Map<String, Object> updates) {
         Customer existing = customerRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Customer with ID " + id + " not found"));
+
+        User currentUser = getCurrentUser();
+
+        // If customer has no user, only ADMIN can patch
+        if (existing.getUser() == null) {
+            if (!isAdmin()) {
+                throw new AccessDeniedException("This customer has no owner. Only ADMIN can update it.");
+            }
+            // ADMIN can patch orphaned customer
+        } else {
+            // Normal ownership check
+            if (!isAdmin() && !existing.getUser().getId().equals(currentUser.getId())) {
+                throw new AccessDeniedException("You can only update your own profile");
+            }
+        }
 
         if (updates.containsKey("phone")) {
             String newPhone = (String) updates.get("phone");
@@ -232,9 +310,29 @@ public class CustomerService {
         return toResponse(updated);
     }
 
+
+
     // Helpers
     private boolean isValidEmail(String email) {
         String emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$";
         return email.matches(emailRegex);
     }
+
+    // NEW: Get current logged-in user
+    private User getCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+    }
+
+    // NEW: Check if current user is ADMIN
+    private boolean isAdmin() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+    }
+
+
+
 }
