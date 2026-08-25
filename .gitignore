@@ -8,4 +8,4 @@ build/
 .gradle/
 *.log
 .idea/
-*.iml
+*.iml.env
