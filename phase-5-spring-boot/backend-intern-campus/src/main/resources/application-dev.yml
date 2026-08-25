@@ -36,3 +36,10 @@ spring:
 jwt:
   secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
   expiration: 86400000  # 24 hours in milliseconds
+
+
+email:
+  mailgun:
+    url: https://api.mailgun.net/v3/sandbox4cbbd7296e6c4d0b9df247d02c5cfebe.mailgun.org
+    api-key: ${MAILGUN_API_KEY}
+    from: Mailgun Sandbox <postmaster@sandbox4cbbd7296e6c4d0b9df247d02c5cfebe.mailgun.org>

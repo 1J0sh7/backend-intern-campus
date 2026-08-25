@@ -34,4 +34,6 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
     @EntityGraph(attributePaths = {"address"})
     @Query("SELECT c FROM Customer c")
     List<Customer> findAllWithAddress();
+
+    boolean existsByUserId(Long id);
 }

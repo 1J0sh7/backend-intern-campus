@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.company.model.User;
 
 @Entity
 @Table(name = "customers")
@@ -24,6 +25,9 @@ public class Customer {
 
     @OneToOne(mappedBy = "customer", cascade = CascadeType.ALL)
     private Address address;
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User user;
 
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL)
     private List<LoanApplication> loanApplications = new ArrayList<>();
@@ -57,4 +61,7 @@ public class Customer {
     public void setLoanApplications(List<LoanApplication> loanApplications) {
         this.loanApplications = loanApplications;
     }
+
+    public User getUser() { return user; }
+    public void setUser(User user) { this.user = user; }
 }
