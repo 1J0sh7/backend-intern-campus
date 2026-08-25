@@ -9,14 +9,12 @@ import com.company.exception.ValidationException;
 import com.company.model.Customer;
 import com.company.model.User;
 import com.company.repository.CustomerRepository;
-import com.company.repository.UserRepository;   // ← NEW import
+import com.company.repository.UserRepository;
+import com.company.service.EmailService;
+
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-
-
-
-
 
 //imported logs
 
@@ -48,11 +46,13 @@ public class CustomerService {
 
     private static final Logger log = LoggerFactory.getLogger(CustomerService.class);
     private final CustomerRepository customerRepository;
-    private final UserRepository userRepository;   //
+    private final UserRepository userRepository;
+    private final EmailService emailService;
 
-    public CustomerService(CustomerRepository customerRepository, UserRepository userRepository) {  // ← UPDATED constructor
+    public CustomerService(CustomerRepository customerRepository, UserRepository userRepository, EmailService emailService) {
         this.customerRepository = customerRepository;
-        this.userRepository = userRepository;      //
+        this.userRepository = userRepository;
+        this.emailService = emailService;
     }
 
     // Mappers
@@ -118,7 +118,6 @@ public class CustomerService {
         );
     }
 
-
     // flters involved
     public CustomerResponse getCustomerById(Long id) {
         Customer customer = customerRepository.findById(id)
@@ -146,13 +145,16 @@ public class CustomerService {
 
     //creating customers
     public CustomerResponse createCustomer(CustomerRequest request) {
-        // duplicate email check
         log.debug("Checking for duplicate email: {}", request.getEmail());
 
-        // Get the current logged-in user
         User currentUser = getCurrentUser();
 
-        // Check if user already has a customer profile
+        // ✅ BLOCK ADMIN from creating profiles
+        if (isAdmin()) {
+            throw new AccessDeniedException("ADMIN cannot create customer profiles. Only regular users can.");
+        }
+
+        // ✅ USER can only have ONE profile
         if (customerRepository.existsByUserId(currentUser.getId())) {
             throw new ValidationException("You already have a customer profile. You cannot create another one.");
         }
@@ -165,16 +167,15 @@ public class CustomerService {
         }
 
         Customer customer = toEntity(request);
-        customer.setUser(currentUser);   // ← THIS IS THE FIX
+        customer.setUser(currentUser);
 
         Customer saved = customerRepository.save(customer);
 
-        if (log.isInfoEnabled()) {
-            log.info("Customer created with ID: {}", saved.getId());
-        }
+        emailService.sendWelcomeEmail(saved.getEmail(), saved.getName());
+
+        log.info("Customer created with ID: {}", saved.getId());
         return toResponse(saved);
     }
-
 
     // updating with filters ...
     public CustomerResponse updateCustomer(Long id, CustomerRequest request) {

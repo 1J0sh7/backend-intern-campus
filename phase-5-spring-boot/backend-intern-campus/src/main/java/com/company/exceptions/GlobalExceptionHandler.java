@@ -18,7 +18,6 @@ public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-    // Handle duplicate resource (email/phone) → 409
     @ExceptionHandler(DuplicateResourceException.class)
     public ResponseEntity<ErrorResponse> handleDuplicateResource(DuplicateResourceException ex) {
         log.warn("Duplicate resource attempt: {}", ex.getMessage());
@@ -27,7 +26,6 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(409, ex.getMessage()));
     }
 
-    // Handle not found → 404
     @ExceptionHandler(NotFoundException.class)
     public ResponseEntity<ErrorResponse> handleNotFound(NotFoundException ex) {
         log.warn("Resource not found: {}", ex.getMessage());
@@ -36,7 +34,6 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(404, ex.getMessage()));
     }
 
-    // Handle validation errors → 400
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> handleValidationErrors(MethodArgumentNotValidException ex) {
         log.error("Validation error: {}", ex.getMessage());
@@ -49,7 +46,7 @@ public class GlobalExceptionHandler {
                 .body(errors);
     }
 
-    // Handle custom validation errors → 400
+    // ✅ ADD THIS — handles ValidationException
     @ExceptionHandler(ValidationException.class)
     public ResponseEntity<ErrorResponse> handleValidation(ValidationException ex) {
         log.warn("Validation error: {}", ex.getMessage());
@@ -58,7 +55,6 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(400, ex.getMessage()));
     }
 
-    // Handle access denied → 403
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex) {
         log.warn("Access denied: {}", ex.getMessage());
@@ -67,7 +63,6 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(403, ex.getMessage()));
     }
 
-    // Handle generic unexpected errors → 500
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
         log.error("Unexpected error: {}", ex.getMessage(), ex);
@@ -76,3 +71,5 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(500, "An unexpected error occurred. Please try again later."));
     }
 }
+
+//latest global
