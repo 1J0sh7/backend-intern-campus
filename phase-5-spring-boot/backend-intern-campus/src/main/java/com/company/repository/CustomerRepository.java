@@ -22,6 +22,9 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
 
     boolean existsByPhone(String phone);
 
+    // NEW: Check if a user already has a customer profile
+    boolean existsByUserId(Long userId);   // ← ADD THIS
+
     // Search methods
     Page<Customer> findByNameContainingIgnoreCase(String name, Pageable pageable);
 

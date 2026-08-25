@@ -1,7 +1,6 @@
 package com.company.model;
 
 import jakarta.persistence.*;
-
 import java.util.ArrayList;
 import java.util.List;
 import com.company.model.User;
@@ -31,6 +30,11 @@ public class Customer {
 
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL)
     private List<LoanApplication> loanApplications = new ArrayList<>();
+
+    // NEW: Link to User
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User user;
 
     // Constructors
     public Customer() {}
