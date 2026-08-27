@@ -69,6 +69,7 @@ public class SecurityConfig {
                         // Public endpoints
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        .requestMatchers("/actuator/**").permitAll()   // <-- ONLY THIS LINE ADDED
 
                         // Customer endpoints — role-based
                         .requestMatchers(HttpMethod.POST, "/api/v1/customers").authenticated()
@@ -87,4 +88,4 @@ public class SecurityConfig {
     }
 }
 
-// latest security
+//latest securty
