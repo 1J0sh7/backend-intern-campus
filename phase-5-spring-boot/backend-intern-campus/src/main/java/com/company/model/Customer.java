@@ -24,9 +24,7 @@ public class Customer {
 
     @OneToOne(mappedBy = "customer", cascade = CascadeType.ALL)
     private Address address;
-    @ManyToOne
-    @JoinColumn(name = "user_id")
-    private User user;
+
 
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL)
     private List<LoanApplication> loanApplications = new ArrayList<>();
