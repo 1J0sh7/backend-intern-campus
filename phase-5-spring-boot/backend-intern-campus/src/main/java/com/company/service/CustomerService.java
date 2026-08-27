@@ -149,12 +149,12 @@ public class CustomerService {
 
         User currentUser = getCurrentUser();
 
-        // ✅ BLOCK ADMIN from creating profiles
+        //  BLOCK ADMIN from creating profiles
         if (isAdmin()) {
             throw new AccessDeniedException("ADMIN cannot create customer profiles. Only regular users can.");
         }
 
-        // ✅ USER can only have ONE profile
+        //  USER can only have ONE profile
         if (customerRepository.existsByUserId(currentUser.getId())) {
             throw new ValidationException("You already have a customer profile. You cannot create another one.");
         }

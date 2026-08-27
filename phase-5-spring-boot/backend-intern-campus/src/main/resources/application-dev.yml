@@ -39,3 +39,12 @@ sendgrid:
   api-key: ${SENDGRID_API_KEY}
   from-email: ${SENDGRID_FROM_EMAIL}
   from-name: customer_api
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,info
+  endpoint:
+    health:
+      show-details: always
