@@ -22,10 +22,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
+@Tag(name = "Authentication", description = "User login and registration endpoints")
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
@@ -47,6 +51,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
+    @Operation(summary = "Authenticate user", description = "Authenticates a user by username and password, returning a JWT token on success.")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
         try {
             authenticationManager.authenticate(
@@ -64,16 +69,17 @@ public class AuthController {
                     userDetails.getUsername(),
                     userDetails.getAuthorities().iterator().next().getAuthority()
             ));
-        } catch (BadCredentialsException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "Invalid username or password"));
         } catch (UsernameNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "User is not found in the system."));
+        } catch (BadCredentialsException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("error", "Invalid username or password"));
         }
     }
 
     @PostMapping("/register")
+    @Operation(summary = "Register new user", description = "Creates a new user account after validating username uniqueness and password confirmation.")
     public ResponseEntity<String> register(@RequestBody RegisterRequest request) {
         // 1. Check if username exists
         if (userRepository.findByUsername(request.getUsername()).isPresent()) {
