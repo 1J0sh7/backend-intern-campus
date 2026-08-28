@@ -19,6 +19,9 @@ import org.springframework.web.bind.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+//importing swagger
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 
 
@@ -30,6 +33,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/customers")
+@Tag(name = "Customers", description = "Customer management endpoints")
 
 // the main class
 public class CustomerController {
@@ -46,6 +50,7 @@ public class CustomerController {
 
     //pagination
     @GetMapping
+    @Operation(summary = "List customers (paginated)", description = "Returns a page of customers, optionally filtered by name or email and sorted.")
     public PageResponse<CustomerResponse> getAll(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -58,6 +63,7 @@ public class CustomerController {
 
     // searching customerwith Id
     @GetMapping("/{id}")
+    @Operation(summary = "Get customer by ID", description = "Returns a single customer, or 404 if no customer exists with the given ID.")
     public ResponseEntity<?> getOne(@PathVariable Long id) {
         CustomerResponse customer = customerService.getCustomerById(id);
         if (customer == null) {
@@ -70,6 +76,7 @@ public class CustomerController {
 
     // Creating a customer
     @PostMapping
+    @Operation(summary = "Create customer", description = "Creates a new customer record from the given request body.")
     public ResponseEntity<CustomerResponse> create(@Valid @RequestBody CustomerRequest request) {
         // adding simple log
         log.info("Received request to create customer with email: {}", request.getEmail());
@@ -80,6 +87,7 @@ public class CustomerController {
 
     //Updatting a customer.
     @PutMapping("/{id}")
+    @Operation(summary = "Update customer", description = "Replaces the full customer record for the given ID, or 404 if not found.")
     public ResponseEntity<?> update(@PathVariable Long id, @Valid @RequestBody CustomerRequest request) {
         CustomerResponse updated = customerService.updateCustomer(id, request);
         if (updated == null) {
@@ -92,6 +100,7 @@ public class CustomerController {
 
     // Updating customer by PATCHING ONLY 1 entity or field  EDITED
     @PatchMapping("/{id}")
+    @Operation(summary = "Partially update customer", description = "Updates only the fields provided in the request body, or 404 if the customer is not found.")
     public ResponseEntity<?> patch(@PathVariable Long id, @RequestBody Map<String, Object> updates) {
         CustomerResponse updated = customerService.patchCustomer(id, updates);
         if (updated == null) {
@@ -105,6 +114,7 @@ public class CustomerController {
 
     // n + 1 fix
     @GetMapping("/with-addresses")
+    @Operation(summary = "List customers with addresses", description = "Returns all customers with their addresses eagerly loaded, avoiding N+1 query issues.")
     public List<CustomerResponse> getAllWithAddresses() {
         return customerService.getAllCustomersWithAddresses();
     }
@@ -120,6 +130,7 @@ public class CustomerController {
 
     // Deleting a Customer
     @DeleteMapping("/{id}")
+    @Operation(summary = "Delete customer", description = "Deletes the customer with the given ID, or 404 if no such customer exists.")
     public ResponseEntity<?> delete(@PathVariable Long id) {
         boolean deleted = customerService.deleteCustomer(id);
         if (!deleted) {
