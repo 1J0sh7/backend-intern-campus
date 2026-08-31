@@ -2,6 +2,8 @@ package com.company.model;
 
 import jakarta.persistence.*;
 
+import java.math.BigDecimal;
+
 @Entity
 @Table(name = "loan_products")
 public class LoanProduct {
@@ -15,22 +17,22 @@ public class LoanProduct {
 
     private String description;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "NUMERIC(5,2)")   // <-- ADD THIS
     private Double interestRate;
 
     @Column(nullable = false)
     private Integer termMonths;
 
-    @Column(name = "max_amount", nullable = false)
-    private Double maxAmount;
+    @Column(name = "max_amount", nullable = false, columnDefinition = "NUMERIC(19,2)")   // <-- ADD THIS
+    private BigDecimal maxAmount;
 
     @Column(nullable = false)
-    private Boolean active = true;  // Soft delete
+    private Boolean active = true;
 
     // Constructors
     public LoanProduct() {}
 
-    public LoanProduct(String name, String description, Double interestRate, Integer termMonths, Double maxAmount) {
+    public LoanProduct(String name, String description, Double interestRate, Integer termMonths, BigDecimal maxAmount) {
         this.name = name;
         this.description = description;
         this.interestRate = interestRate;
@@ -55,8 +57,8 @@ public class LoanProduct {
     public Integer getTermMonths() { return termMonths; }
     public void setTermMonths(Integer termMonths) { this.termMonths = termMonths; }
 
-    public Double getMaxAmount() { return maxAmount; }
-    public void setMaxAmount(Double maxAmount) { this.maxAmount = maxAmount; }
+    public BigDecimal getMaxAmount() { return maxAmount; }
+    public void setMaxAmount(BigDecimal maxAmount) { this.maxAmount = maxAmount; }
 
     public Boolean getActive() { return active; }
     public void setActive(Boolean active) { this.active = active; }

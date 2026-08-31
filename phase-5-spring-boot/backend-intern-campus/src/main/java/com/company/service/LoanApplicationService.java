@@ -1,8 +1,6 @@
 package com.company.service;
 
-import com.company.dto.CustomerResponse;
 import com.company.dto.LoanApplicationResponseDTO;
-import com.company.dto.LoanProductResponseDTO;
 import com.company.mapper.LoanMapper;
 import com.company.model.*;
 import com.company.repository.CustomerRepository;
@@ -14,10 +12,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class LoanApplicationService {
@@ -42,7 +39,7 @@ public class LoanApplicationService {
 
     // 1. Apply for a loan
     @Transactional
-    public LoanApplicationResponseDTO applyForLoan(Long customerId, Long productId, Double amount) {
+    public LoanApplicationResponseDTO applyForLoan(Long customerId, Long productId, BigDecimal amount) {
         Customer customer = customerRepository.findById(customerId)
                 .orElseThrow(() -> new RuntimeException("Customer not found"));
 
@@ -50,7 +47,7 @@ public class LoanApplicationService {
                 .orElseThrow(() -> new RuntimeException("Product not found"));
 
         // Business rule: amount cannot exceed maxAmount
-        if (amount > product.getMaxAmount()) {
+        if (amount.compareTo(product.getMaxAmount()) > 0) {
             throw new RuntimeException("Requested amount exceeds maximum allowed for this product");
         }
 
@@ -139,7 +136,7 @@ public class LoanApplicationService {
 
     // 5. Make a repayment
     @Transactional
-    public Repayment makeRepayment(Long applicationId, Double amount) {
+    public Repayment makeRepayment(Long applicationId, BigDecimal amount) {
         LoanApplication application = loanApplicationRepository.findById(applicationId)
                 .orElseThrow(() -> new RuntimeException("Application not found"));
 
@@ -148,7 +145,7 @@ public class LoanApplicationService {
         }
 
         // Validate repayment amount does not exceed remaining balance
-        if (amount > application.getRemainingBalance()) {
+        if (amount.compareTo(application.getRemainingBalance()) > 0) {
             throw new RuntimeException("Repayment amount exceeds remaining balance");
         }
 
@@ -161,11 +158,11 @@ public class LoanApplicationService {
         Repayment saved = repaymentRepository.save(repayment);
 
         // Update remaining balance
-        Double newBalance = application.getRemainingBalance() - amount;
+        BigDecimal newBalance = application.getRemainingBalance().subtract(amount);
         application.setRemainingBalance(newBalance);
 
         // If balance is zero or less, mark as COMPLETED
-        if (newBalance <= 0) {
+        if (newBalance.compareTo(BigDecimal.ZERO) <= 0) {
             application.setStatus(LoanStatus.COMPLETED);
         } else {
             application.setStatus(LoanStatus.ACTIVE);
@@ -203,7 +200,7 @@ public class LoanApplicationService {
     // Helper: Generate repayment schedule
     private void generateRepaymentSchedule(LoanApplication application) {
         int months = application.getProduct().getTermMonths();
-        double monthlyAmount = application.getAmount() / months;
+        BigDecimal monthlyAmount = application.getAmount().divide(BigDecimal.valueOf(months), 2, java.math.RoundingMode.HALF_UP);
         LocalDate startDate = LocalDate.now();
 
         for (int i = 1; i <= months; i++) {

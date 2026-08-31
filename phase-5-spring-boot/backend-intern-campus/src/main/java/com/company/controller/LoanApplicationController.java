@@ -15,6 +15,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
+
 @RestController
 @RequestMapping("/api/v1/loan-applications")
 @Tag(name = "Loan Applications", description = "Loan application, approval, disbursement, and repayment endpoints")
@@ -35,12 +37,12 @@ public class LoanApplicationController {
             @RequestParam Long productId,
             @RequestParam Double amount) {
         return new ResponseEntity<>(
-                loanApplicationService.applyForLoan(customerId, productId, amount),
+                loanApplicationService.applyForLoan(customerId, productId, BigDecimal.valueOf(amount)),
                 HttpStatus.CREATED
         );
     }
 
-    // 2. Get a specific loan application (USER can view their own, ADMIN can view any)
+    // 2. Get a specific loan application
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "[USER/ADMIN] Get loan application by ID", description = "Returns a single loan application. Users can view their own applications; admins can view any.")
@@ -48,7 +50,7 @@ public class LoanApplicationController {
         return ResponseEntity.ok(loanApplicationService.getApplicationById(id));
     }
 
-    // 3. Get all applications for a specific customer (USER) — WITH PAGINATION
+    // 3. Get all applications for a specific customer (with Pagination)
     @GetMapping("/customer/{customerId}")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "[USER] List applications by customer", description = "Returns paginated loan applications submitted by the given customer.")
@@ -99,12 +101,12 @@ public class LoanApplicationController {
             @PathVariable Long id,
             @RequestParam Double amount) {
         return new ResponseEntity<>(
-                loanApplicationService.makeRepayment(id, amount),
+                loanApplicationService.makeRepayment(id, BigDecimal.valueOf(amount)),
                 HttpStatus.CREATED
         );
     }
 
-    // 8. Admin: Get all applications (oversight) — WITH PAGINATION
+    // 8. Admin: Get all applications (with Pagination)
     @GetMapping("/admin/all")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "[ADMIN] List all loan applications", description = "Admin-only. Returns paginated list of every loan application in the system for oversight.")
