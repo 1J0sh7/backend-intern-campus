@@ -1,7 +1,8 @@
 package com.company.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,19 +26,33 @@ public class LoanApplication {
     @Column(nullable = false)
     private Double amount;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String status; // PENDING, APPROVED, REJECTED, ACTIVE, COMPLETED
+    private LoanStatus status;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    @OneToMany(mappedBy = "loanApplication", cascade = CascadeType.ALL)
+    @Column(name = "approved_date")
+    private LocalDate approvedDate;
+
+    @Column(name = "disbursed_date")
+    private LocalDate disbursedDate;
+
+    @Column(name = "rejection_reason")
+    private String rejectionReason;
+
+    @Column(name = "approved_by")
+    private String approvedBy;
+
+    @OneToMany(mappedBy = "loanApplication", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore   // <-- ADD THIS (breaks the infinite loop)
     private List<Repayment> repayments = new ArrayList<>();
 
     // Constructors
     public LoanApplication() {}
 
-    public LoanApplication(Customer customer, LoanProduct product, Double amount, String status) {
+    public LoanApplication(Customer customer, LoanProduct product, Double amount, LoanStatus status) {
         this.customer = customer;
         this.product = product;
         this.amount = amount;
@@ -58,11 +73,23 @@ public class LoanApplication {
     public Double getAmount() { return amount; }
     public void setAmount(Double amount) { this.amount = amount; }
 
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
+    public LoanStatus getStatus() { return status; }
+    public void setStatus(LoanStatus status) { this.status = status; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public LocalDate getApprovedDate() { return approvedDate; }
+    public void setApprovedDate(LocalDate approvedDate) { this.approvedDate = approvedDate; }
+
+    public LocalDate getDisbursedDate() { return disbursedDate; }
+    public void setDisbursedDate(LocalDate disbursedDate) { this.disbursedDate = disbursedDate; }
+
+    public String getRejectionReason() { return rejectionReason; }
+    public void setRejectionReason(String rejectionReason) { this.rejectionReason = rejectionReason; }
+
+    public String getApprovedBy() { return approvedBy; }
+    public void setApprovedBy(String approvedBy) { this.approvedBy = approvedBy; }
 
     public List<Repayment> getRepayments() { return repayments; }
     public void setRepayments(List<Repayment> repayments) { this.repayments = repayments; }
