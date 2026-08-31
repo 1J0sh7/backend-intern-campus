@@ -54,6 +54,16 @@ dependencies {
 
 	// prometheus
 	implementation 'io.micrometer:micrometer-registry-prometheus'
+
+	// flyway dependency
+	implementation 'org.flywaydb:flyway-core:11.0.0'
+	implementation 'org.flywaydb:flyway-database-postgresql:11.0.0'
+
+	// retry springboot-retry
+	implementation 'org.springframework.retry:spring-retry'
+	implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+	// kotlin
+	implementation 'org.jetbrains.kotlin:kotlin-reflect'
 }
 test {
 	useJUnitPlatform()

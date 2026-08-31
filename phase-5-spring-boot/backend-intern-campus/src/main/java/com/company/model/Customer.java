@@ -1,9 +1,9 @@
 package com.company.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
-import com.company.model.User;
 
 @Entity
 @Table(name = "customers")
@@ -25,11 +25,10 @@ public class Customer {
     @OneToOne(mappedBy = "customer", cascade = CascadeType.ALL)
     private Address address;
 
-
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL)
+    @JsonIgnore   // <-- ADD THIS (breaks the infinite loop)
     private List<LoanApplication> loanApplications = new ArrayList<>();
 
-    // NEW: Link to User
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;

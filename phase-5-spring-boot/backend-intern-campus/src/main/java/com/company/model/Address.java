@@ -1,5 +1,6 @@
 package com.company.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;   // <-- ADD THIS IMPORT
 import jakarta.persistence.*;
 
 @Entity
@@ -23,6 +24,7 @@ public class Address {
 
     @OneToOne
     @JoinColumn(name = "customer_id", unique = true)
+    @JsonIgnore   // <-- ADD THIS LINE (breaks the Customer ↔ Address loop)
     private Customer customer;
 
     // Constructors

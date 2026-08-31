@@ -66,12 +66,12 @@ public class SecurityConfig {
                         .accessDeniedHandler(accessDeniedHandler)
                 )
                 .authorizeHttpRequests(auth -> auth
-                        // Public endpoints
+                        // ==================== PUBLIC ENDPOINTS ====================
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                        .requestMatchers("/actuator/**").permitAll()   // <-- ONLY THIS LINE ADDED
+                        .requestMatchers("/actuator/**").permitAll()
 
-                        // Customer endpoints — role-based
+                        // ==================== CUSTOMER ENDPOINTS ====================
                         .requestMatchers(HttpMethod.POST, "/api/v1/customers").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/v1/customers").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/v1/customers/{id}").authenticated()
@@ -79,6 +79,25 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/customers/{id}").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/customers/{id}").hasRole("ADMIN")
 
+                        // ==================== LOAN PRODUCT ENDPOINTS ====================
+                        .requestMatchers(HttpMethod.POST, "/api/v1/loan-products").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/loan-products/{id}").hasRole("ADMIN")   // FIXED: {id} instead of /**
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/loan-products/{id}").hasRole("ADMIN") // FIXED: {id} instead of /**
+                        .requestMatchers(HttpMethod.GET, "/api/v1/loan-products").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/loan-products/{id}").authenticated()
+
+                        // ==================== LOAN APPLICATION ENDPOINTS ====================
+                        .requestMatchers(HttpMethod.POST, "/api/v1/loan-applications").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/loan-applications/{id}").authenticated()      // FIXED
+                        .requestMatchers(HttpMethod.GET, "/api/v1/loan-applications/customer/{customerId}").authenticated() // FIXED
+                        .requestMatchers(HttpMethod.GET, "/api/v1/loan-applications/admin/all").hasRole("ADMIN") // FIXED
+
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/loan-applications/{id}/approve").hasRole("ADMIN")   // FIXED
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/loan-applications/{id}/reject").hasRole("ADMIN")    // FIXED
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/loan-applications/{id}/disburse").hasRole("ADMIN")  // FIXED
+                        .requestMatchers(HttpMethod.POST, "/api/v1/loan-applications/{id}/repayments").authenticated() // FIXED
+
+                        // ==================== ALL OTHER REQUESTS ====================
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())
@@ -87,5 +106,3 @@ public class SecurityConfig {
         return http.build();
     }
 }
-
-//latest securty
