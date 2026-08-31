@@ -1,16 +1,23 @@
 package com.company.service;
 
+import com.company.dto.CustomerResponse;
+import com.company.dto.LoanApplicationResponseDTO;
+import com.company.dto.LoanProductResponseDTO;
+import com.company.mapper.LoanMapper;
 import com.company.model.*;
+import com.company.repository.CustomerRepository;
 import com.company.repository.LoanApplicationRepository;
 import com.company.repository.LoanProductRepository;
-import com.company.repository.CustomerRepository;
 import com.company.repository.RepaymentRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class LoanApplicationService {
@@ -19,7 +26,7 @@ public class LoanApplicationService {
     private final LoanProductRepository loanProductRepository;
     private final CustomerRepository customerRepository;
     private final RepaymentRepository repaymentRepository;
-    private final EmailService emailService;  // Reuse your existing SendGrid service
+    private final EmailService emailService;
 
     public LoanApplicationService(LoanApplicationRepository loanApplicationRepository,
                                   LoanProductRepository loanProductRepository,
@@ -35,7 +42,7 @@ public class LoanApplicationService {
 
     // 1. Apply for a loan
     @Transactional
-    public LoanApplication applyForLoan(Long customerId, Long productId, Double amount) {
+    public LoanApplicationResponseDTO applyForLoan(Long customerId, Long productId, Double amount) {
         Customer customer = customerRepository.findById(customerId)
                 .orElseThrow(() -> new RuntimeException("Customer not found"));
 
@@ -56,15 +63,15 @@ public class LoanApplicationService {
 
         LoanApplication saved = loanApplicationRepository.save(application);
 
-        // 🟢 EMAIL: Loan Creation
+        // Email: Loan Creation
         emailService.sendLoanCreationEmail(customer.getEmail(), saved);
 
-        return saved;
+        return LoanMapper.toLoanApplicationResponseDTO(saved);
     }
 
     // 2. Approve a loan (Admin)
     @Transactional
-    public LoanApplication approveLoan(Long applicationId, String adminUsername) {
+    public LoanApplicationResponseDTO approveLoan(Long applicationId, String adminUsername) {
         LoanApplication application = loanApplicationRepository.findById(applicationId)
                 .orElseThrow(() -> new RuntimeException("Application not found"));
 
@@ -76,20 +83,20 @@ public class LoanApplicationService {
         application.setApprovedDate(LocalDate.now());
         application.setApprovedBy(adminUsername);
 
-        // 🔥 Generate Repayment Schedule
+        // Generate Repayment Schedule
         generateRepaymentSchedule(application);
 
         LoanApplication saved = loanApplicationRepository.save(application);
 
-        // 🟢 EMAIL: Loan Approval
+        // Email: Loan Approval
         emailService.sendLoanApprovalEmail(application.getCustomer().getEmail(), saved);
 
-        return saved;
+        return LoanMapper.toLoanApplicationResponseDTO(saved);
     }
 
     // 3. Reject a loan (Admin)
     @Transactional
-    public LoanApplication rejectLoan(Long applicationId, String reason) {
+    public LoanApplicationResponseDTO rejectLoan(Long applicationId, String reason) {
         LoanApplication application = loanApplicationRepository.findById(applicationId)
                 .orElseThrow(() -> new RuntimeException("Application not found"));
 
@@ -102,15 +109,15 @@ public class LoanApplicationService {
 
         LoanApplication saved = loanApplicationRepository.save(application);
 
-        // 🟢 EMAIL: Loan Rejection
+        // Email: Loan Rejection
         emailService.sendLoanRejectionEmail(application.getCustomer().getEmail(), saved, reason);
 
-        return saved;
+        return LoanMapper.toLoanApplicationResponseDTO(saved);
     }
 
     // 4. Disburse a loan (Admin)
     @Transactional
-    public LoanApplication disburseLoan(Long applicationId) {
+    public LoanApplicationResponseDTO disburseLoan(Long applicationId) {
         LoanApplication application = loanApplicationRepository.findById(applicationId)
                 .orElseThrow(() -> new RuntimeException("Application not found"));
 
@@ -120,13 +127,14 @@ public class LoanApplicationService {
 
         application.setStatus(LoanStatus.DISBURSED);
         application.setDisbursedDate(LocalDate.now());
+        application.setRemainingBalance(application.getAmount()); // Set remaining balance = full amount
 
         LoanApplication saved = loanApplicationRepository.save(application);
 
-        // 🟢 EMAIL: Disbursement
+        // Email: Disbursement
         emailService.sendLoanDisbursementEmail(application.getCustomer().getEmail(), saved);
 
-        return saved;
+        return LoanMapper.toLoanApplicationResponseDTO(saved);
     }
 
     // 5. Make a repayment
@@ -139,33 +147,61 @@ public class LoanApplicationService {
             throw new RuntimeException("Loan is not active/disbursed");
         }
 
+        // Validate repayment amount does not exceed remaining balance
+        if (amount > application.getRemainingBalance()) {
+            throw new RuntimeException("Repayment amount exceeds remaining balance");
+        }
+
         Repayment repayment = new Repayment();
         repayment.setLoanApplication(application);
         repayment.setAmount(amount);
-        repayment.setDueDate(LocalDate.now()); // In real-life, this comes from schedule
+        repayment.setDueDate(LocalDate.now());
         repayment.setPaidDate(LocalDate.now());
 
         Repayment saved = repaymentRepository.save(repayment);
 
-        // Check if all scheduled repayments are paid -> mark as COMPLETED
-        List<Repayment> allRepayments = repaymentRepository.findByLoanApplication(application);
-        long totalPaid = allRepayments.stream().filter(Repayment::isPaid).count();
-        // For simplicity, let's assume termMonths = number of expected payments.
-        // We could implement full loan balance logic, but for now, if they pay >= termMonths times, mark complete.
-        // (You can expand this with a proper loan amortization).
-        // Let's just mark as ACTIVE for now unless we add full amortization logic.
-        application.setStatus(LoanStatus.ACTIVE);
+        // Update remaining balance
+        Double newBalance = application.getRemainingBalance() - amount;
+        application.setRemainingBalance(newBalance);
+
+        // If balance is zero or less, mark as COMPLETED
+        if (newBalance <= 0) {
+            application.setStatus(LoanStatus.COMPLETED);
+        } else {
+            application.setStatus(LoanStatus.ACTIVE);
+        }
+
         loanApplicationRepository.save(application);
 
-        // 🟢 EMAIL: Repayment Received
+        // Email: Repayment Confirmation
         emailService.sendRepaymentConfirmationEmail(application.getCustomer().getEmail(), application, saved);
 
         return saved;
     }
 
+    // 6. Get application by ID (returns DTO)
+    public LoanApplicationResponseDTO getApplicationById(Long id) {
+        LoanApplication application = loanApplicationRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Application not found"));
+        return LoanMapper.toLoanApplicationResponseDTO(application);
+    }
+
+    // 7. Get all applications for a customer (with Pagination)
+    public Page<LoanApplicationResponseDTO> getApplicationsByCustomer(Long customerId, Pageable pageable) {
+        Customer customer = customerRepository.findById(customerId)
+                .orElseThrow(() -> new RuntimeException("Customer not found"));
+        Page<LoanApplication> page = loanApplicationRepository.findByCustomer(customer, pageable);
+        return page.map(LoanMapper::toLoanApplicationResponseDTO);
+    }
+
+    // 8. Get all applications (Admin) — with Pagination
+    public Page<LoanApplicationResponseDTO> getAllApplications(Pageable pageable) {
+        Page<LoanApplication> page = loanApplicationRepository.findAll(pageable);
+        return page.map(LoanMapper::toLoanApplicationResponseDTO);
+    }
+
     // Helper: Generate repayment schedule
     private void generateRepaymentSchedule(LoanApplication application) {
-        // e.g., split amount over termMonths (simple equal installments)
         int months = application.getProduct().getTermMonths();
         double monthlyAmount = application.getAmount() / months;
         LocalDate startDate = LocalDate.now();
@@ -175,26 +211,8 @@ public class LoanApplicationService {
             repayment.setLoanApplication(application);
             repayment.setAmount(monthlyAmount);
             repayment.setDueDate(startDate.plusMonths(i));
-            repayment.setPaidDate(null); // not paid yet
+            repayment.setPaidDate(null);
             repaymentRepository.save(repayment);
         }
-    }
-
-    // 6. Get application by ID
-    public LoanApplication getApplicationById(Long id) {
-        return loanApplicationRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Application not found"));
-    }
-
-    // 7. Get all applications for a customer
-    public List<LoanApplication> getApplicationsByCustomer(Long customerId) {
-        Customer customer = customerRepository.findById(customerId)
-                .orElseThrow(() -> new RuntimeException("Customer not found"));
-        return loanApplicationRepository.findByCustomer(customer);
-    }
-
-    // 8. Get all applications (Admin)
-    public List<LoanApplication> getAllApplications() {
-        return loanApplicationRepository.findAll();
     }
 }

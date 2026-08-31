@@ -45,8 +45,11 @@ public class LoanApplication {
     @Column(name = "approved_by")
     private String approvedBy;
 
+    @Column(name = "remaining_balance")   // <-- ADD THIS FIELD
+    private Double remainingBalance;
+
     @OneToMany(mappedBy = "loanApplication", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonIgnore   // <-- ADD THIS (breaks the infinite loop)
+    @JsonIgnore
     private List<Repayment> repayments = new ArrayList<>();
 
     // Constructors
@@ -90,6 +93,9 @@ public class LoanApplication {
 
     public String getApprovedBy() { return approvedBy; }
     public void setApprovedBy(String approvedBy) { this.approvedBy = approvedBy; }
+
+    public Double getRemainingBalance() { return remainingBalance; }   // <-- ADD GETTER
+    public void setRemainingBalance(Double remainingBalance) { this.remainingBalance = remainingBalance; }   // <-- ADD SETTER
 
     public List<Repayment> getRepayments() { return repayments; }
     public void setRepayments(List<Repayment> repayments) { this.repayments = repayments; }
