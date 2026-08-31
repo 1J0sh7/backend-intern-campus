@@ -1,44 +1,23 @@
-package com.company.model;
+package com.company.dto;
 
-import jakarta.persistence.*;
-
-import java.math.BigDecimal;
-
-@Entity
-@Table(name = "loan_products")
-public class LoanProduct {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+public class LoanProductResponseDTO {
     private Long id;
-
-    @Column(nullable = false)
     private String name;
-
     private String description;
-
-    @Column(nullable = false, columnDefinition = "NUMERIC(5,2)")   // <-- ADD THIS
     private Double interestRate;
-
-    @Column(nullable = false)
     private Integer termMonths;
-
-    @Column(name = "max_amount", nullable = false, columnDefinition = "NUMERIC(19,2)")   // <-- ADD THIS
-    private BigDecimal maxAmount;
-
-    @Column(nullable = false)
-    private Boolean active = true;
+    private Double maxAmount;
 
     // Constructors
-    public LoanProduct() {}
+    public LoanProductResponseDTO() {}
 
-    public LoanProduct(String name, String description, Double interestRate, Integer termMonths, BigDecimal maxAmount) {
+    public LoanProductResponseDTO(Long id, String name, String description, Double interestRate, Integer termMonths, Double maxAmount) {
+        this.id = id;
         this.name = name;
         this.description = description;
         this.interestRate = interestRate;
         this.termMonths = termMonths;
         this.maxAmount = maxAmount;
-        this.active = true;
     }
 
     // Getters and Setters
@@ -57,9 +36,6 @@ public class LoanProduct {
     public Integer getTermMonths() { return termMonths; }
     public void setTermMonths(Integer termMonths) { this.termMonths = termMonths; }
 
-    public BigDecimal getMaxAmount() { return maxAmount; }
-    public void setMaxAmount(BigDecimal maxAmount) { this.maxAmount = maxAmount; }
-
-    public Boolean getActive() { return active; }
-    public void setActive(Boolean active) { this.active = active; }
+    public Double getMaxAmount() { return maxAmount; }
+    public void setMaxAmount(Double maxAmount) { this.maxAmount = maxAmount; }
 }

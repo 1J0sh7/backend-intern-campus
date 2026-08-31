@@ -81,10 +81,10 @@ public class SecurityConfig {
 
                         // ==================== LOAN PRODUCT ENDPOINTS ====================
                         .requestMatchers(HttpMethod.POST, "/api/v1/loan-products").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/v1/loan-products/{id}").hasRole("ADMIN")   // FIXED: {id} instead of /**
-                        .requestMatchers(HttpMethod.DELETE, "/api/v1/loan-products/{id}").hasRole("ADMIN") // FIXED: {id} instead of /**
-                        .requestMatchers(HttpMethod.GET, "/api/v1/loan-products").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/loan-products/{id}").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/loan-products/{id}").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/loan-products/{id}").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/loan-products").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/loan-products/{id}").permitAll()
 
                         // ==================== LOAN APPLICATION ENDPOINTS ====================
                         .requestMatchers(HttpMethod.POST, "/api/v1/loan-applications").authenticated()
