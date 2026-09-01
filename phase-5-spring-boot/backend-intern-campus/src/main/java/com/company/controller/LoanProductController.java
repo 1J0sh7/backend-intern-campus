@@ -11,7 +11,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/loan-products")
@@ -36,13 +39,15 @@ public class LoanProductController {
         Sort sort = Sort.by(Sort.Direction.fromString(sortDirection), sortBy);
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        Page<LoanProduct> productPage = loanProductService.getAllProducts(pageable);
+        // For now, just return all — you can paginate later
+        List<LoanProduct> products = loanProductService.getActiveLoanProducts();
+        Page<LoanProduct> productPage = new org.springframework.data.domain.PageImpl<>(products, pageable, products.size());
         Page<LoanProductResponseDTO> dtoPage = productPage.map(LoanMapper::toLoanProductResponseDTO);
 
         return ResponseEntity.ok(dtoPage);
     }
 
-    // 2. GET loan product by ID (returns DTO)
+    // 2. GET loan product by ID
     @GetMapping("/{id}")
     @Operation(summary = "[PUBLIC] Get loan product by ID", description = "Returns a single loan product.")
     public ResponseEntity<LoanProductResponseDTO> getProductById(@PathVariable Long id) {
@@ -52,9 +57,26 @@ public class LoanProductController {
 
     // 3. POST create loan product (ADMIN only)
     @PostMapping
-    // @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "[ADMIN] Create a loan product", description = "Creates a new loan product.")
     public ResponseEntity<LoanProduct> createLoanProduct(@RequestBody LoanProduct product) {
         return ResponseEntity.ok(loanProductService.createLoanProduct(product));
+    }
+
+    // 4. PUT update loan product (ADMIN only)
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "[ADMIN] Update a loan product", description = "Updates an existing loan product.")
+    public ResponseEntity<LoanProduct> updateLoanProduct(@PathVariable Long id, @RequestBody LoanProduct product) {
+        return ResponseEntity.ok(loanProductService.updateLoanProduct(id, product));
+    }
+
+    // 5. DELETE loan product (ADMIN only)
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "[ADMIN] Delete a loan product", description = "Soft deletes a loan product.")
+    public ResponseEntity<Void> deleteLoanProduct(@PathVariable Long id) {
+        loanProductService.deleteLoanProduct(id);
+        return ResponseEntity.noContent().build();
     }
 }

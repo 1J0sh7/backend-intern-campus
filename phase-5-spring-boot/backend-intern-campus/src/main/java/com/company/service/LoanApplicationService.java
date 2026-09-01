@@ -1,6 +1,10 @@
 package com.company.service;
 
 import com.company.dto.LoanApplicationResponseDTO;
+import com.company.exception.CustomerHasActiveLoanException;
+import com.company.exception.ResourceNotFoundException;
+import com.company.exception.ValidationException;
+import com.company.exception.*;
 import com.company.mapper.LoanMapper;
 import com.company.model.*;
 import com.company.repository.CustomerRepository;
@@ -13,8 +17,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
 
 @Service
 public class LoanApplicationService {
@@ -41,14 +48,30 @@ public class LoanApplicationService {
     @Transactional
     public LoanApplicationResponseDTO applyForLoan(Long customerId, Long productId, BigDecimal amount) {
         Customer customer = customerRepository.findById(customerId)
-                .orElseThrow(() -> new RuntimeException("Customer not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + customerId));
+
+        // CHECK FOR ACTIVE LOANS
+        List<LoanStatus> activeStatuses = Arrays.asList(
+                LoanStatus.PENDING,
+                LoanStatus.APPROVED,
+                LoanStatus.DISBURSED,
+                LoanStatus.ACTIVE
+        );
+
+        boolean hasActiveLoan = loanApplicationRepository.existsByCustomerAndStatusIn(customer, activeStatuses);
+
+        if (hasActiveLoan) {
+            throw new CustomerHasActiveLoanException(
+                    "Customer already has an active loan (PENDING, APPROVED, DISBURSED, or ACTIVE). Cannot apply for a new loan."
+            );
+        }
 
         LoanProduct product = loanProductRepository.findById(productId)
-                .orElseThrow(() -> new RuntimeException("Product not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + productId));
 
         // Business rule: amount cannot exceed maxAmount
         if (amount.compareTo(product.getMaxAmount()) > 0) {
-            throw new RuntimeException("Requested amount exceeds maximum allowed for this product");
+            throw new ValidationException("Requested amount exceeds maximum allowed for this product");
         }
 
         LoanApplication application = new LoanApplication();
@@ -70,17 +93,17 @@ public class LoanApplicationService {
     @Transactional
     public LoanApplicationResponseDTO approveLoan(Long applicationId, String adminUsername) {
         LoanApplication application = loanApplicationRepository.findById(applicationId)
-                .orElseThrow(() -> new RuntimeException("Application not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Application not found with id: " + applicationId));
 
         if (application.getStatus() != LoanStatus.PENDING) {
-            throw new RuntimeException("Loan is not in PENDING status");
+            throw new LoanNotPendingException("Loan is not in PENDING status. Current status: " + application.getStatus());
         }
 
         application.setStatus(LoanStatus.APPROVED);
         application.setApprovedDate(LocalDate.now());
         application.setApprovedBy(adminUsername);
 
-        // Generate Repayment Schedule
+        // Generate Repayment Schedule (Max 12 months)
         generateRepaymentSchedule(application);
 
         LoanApplication saved = loanApplicationRepository.save(application);
@@ -95,11 +118,14 @@ public class LoanApplicationService {
     @Transactional
     public LoanApplicationResponseDTO rejectLoan(Long applicationId, String reason) {
         LoanApplication application = loanApplicationRepository.findById(applicationId)
-                .orElseThrow(() -> new RuntimeException("Application not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Application not found with id: " + applicationId));
 
         if (application.getStatus() != LoanStatus.PENDING) {
-            throw new RuntimeException("Only pending applications can be rejected");
+            throw new LoanNotPendingException("Only pending applications can be rejected. Current status: " + application.getStatus());
         }
+
+        // Delete any generated repayments
+        repaymentRepository.deleteByLoanApplication(application);
 
         application.setStatus(LoanStatus.REJECTED);
         application.setRejectionReason(reason);
@@ -116,15 +142,15 @@ public class LoanApplicationService {
     @Transactional
     public LoanApplicationResponseDTO disburseLoan(Long applicationId) {
         LoanApplication application = loanApplicationRepository.findById(applicationId)
-                .orElseThrow(() -> new RuntimeException("Application not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Application not found with id: " + applicationId));
 
         if (application.getStatus() != LoanStatus.APPROVED) {
-            throw new RuntimeException("Only approved loans can be disbursed");
+            throw new LoanNotApprovedException("Only approved loans can be disbursed. Current status: " + application.getStatus());
         }
 
         application.setStatus(LoanStatus.DISBURSED);
         application.setDisbursedDate(LocalDate.now());
-        application.setRemainingBalance(application.getAmount()); // Set remaining balance = full amount
+        application.setRemainingBalance(application.getAmount());
 
         LoanApplication saved = loanApplicationRepository.save(application);
 
@@ -138,15 +164,15 @@ public class LoanApplicationService {
     @Transactional
     public Repayment makeRepayment(Long applicationId, BigDecimal amount) {
         LoanApplication application = loanApplicationRepository.findById(applicationId)
-                .orElseThrow(() -> new RuntimeException("Application not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Application not found with id: " + applicationId));
 
         if (application.getStatus() != LoanStatus.DISBURSED && application.getStatus() != LoanStatus.ACTIVE) {
-            throw new RuntimeException("Loan is not active/disbursed");
+            throw new ValidationException("Loan is not active/disbursed. Current status: " + application.getStatus());
         }
 
         // Validate repayment amount does not exceed remaining balance
         if (amount.compareTo(application.getRemainingBalance()) > 0) {
-            throw new RuntimeException("Repayment amount exceeds remaining balance");
+            throw new InsufficientBalanceException("Repayment amount exceeds remaining balance");
         }
 
         Repayment repayment = new Repayment();
@@ -179,14 +205,14 @@ public class LoanApplicationService {
     // 6. Get application by ID (returns DTO)
     public LoanApplicationResponseDTO getApplicationById(Long id) {
         LoanApplication application = loanApplicationRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Application not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Application not found with id: " + id));
         return LoanMapper.toLoanApplicationResponseDTO(application);
     }
 
     // 7. Get all applications for a customer (with Pagination)
     public Page<LoanApplicationResponseDTO> getApplicationsByCustomer(Long customerId, Pageable pageable) {
         Customer customer = customerRepository.findById(customerId)
-                .orElseThrow(() -> new RuntimeException("Customer not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + customerId));
         Page<LoanApplication> page = loanApplicationRepository.findByCustomer(customer, pageable);
         return page.map(LoanMapper::toLoanApplicationResponseDTO);
     }
@@ -197,10 +223,17 @@ public class LoanApplicationService {
         return page.map(LoanMapper::toLoanApplicationResponseDTO);
     }
 
-    // Helper: Generate repayment schedule
+    // ===== Helper: Generate repayment schedule (MAX 12 MONTHS) =====
     private void generateRepaymentSchedule(LoanApplication application) {
         int months = application.getProduct().getTermMonths();
-        BigDecimal monthlyAmount = application.getAmount().divide(BigDecimal.valueOf(months), 2, java.math.RoundingMode.HALF_UP);
+
+        // Enforce 12-month maximum
+        if (months > 12) {
+            throw new ValidationException("Loan term cannot exceed 12 months");
+        }
+
+        BigDecimal monthlyAmount = application.getAmount()
+                .divide(BigDecimal.valueOf(months), 2, RoundingMode.HALF_UP);
         LocalDate startDate = LocalDate.now();
 
         for (int i = 1; i <= months; i++) {

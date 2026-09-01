@@ -18,6 +18,8 @@ public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
+    // ===== EXISTING HANDLERS =====
+
     @ExceptionHandler(DuplicateResourceException.class)
     public ResponseEntity<ErrorResponse> handleDuplicateResource(DuplicateResourceException ex) {
         log.warn("Duplicate resource attempt: {}", ex.getMessage());
@@ -46,7 +48,6 @@ public class GlobalExceptionHandler {
                 .body(errors);
     }
 
-    // ✅ ADD THIS — handles ValidationException
     @ExceptionHandler(ValidationException.class)
     public ResponseEntity<ErrorResponse> handleValidation(ValidationException ex) {
         log.warn("Validation error: {}", ex.getMessage());
@@ -63,6 +64,50 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(403, ex.getMessage()));
     }
 
+    // ===== NEW HANDLERS FOR LOAN EXCEPTIONS =====
+
+    @ExceptionHandler(CustomerHasActiveLoanException.class)
+    public ResponseEntity<ErrorResponse> handleCustomerHasActiveLoan(CustomerHasActiveLoanException ex) {
+        log.warn("Customer has active loan: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse(409, ex.getMessage()));
+    }
+
+    @ExceptionHandler(LoanNotPendingException.class)
+    public ResponseEntity<ErrorResponse> handleLoanNotPending(LoanNotPendingException ex) {
+        log.warn("Loan not in PENDING status: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(400, ex.getMessage()));
+    }
+
+    @ExceptionHandler(LoanNotApprovedException.class)
+    public ResponseEntity<ErrorResponse> handleLoanNotApproved(LoanNotApprovedException ex) {
+        log.warn("Loan not in APPROVED status: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(400, ex.getMessage()));
+    }
+
+    @ExceptionHandler(InsufficientBalanceException.class)
+    public ResponseEntity<ErrorResponse> handleInsufficientBalance(InsufficientBalanceException ex) {
+        log.warn("Insufficient balance: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(400, ex.getMessage()));
+    }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleResourceNotFound(ResourceNotFoundException ex) {
+        log.warn("Resource not found: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(404, ex.getMessage()));
+    }
+
+    // ===== GENERIC EXCEPTION HANDLER (Keep at the bottom) =====
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
         log.error("Unexpected error: {}", ex.getMessage(), ex);
@@ -71,5 +116,3 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(500, "An unexpected error occurred. Please try again later."));
     }
 }
-
-//latest global

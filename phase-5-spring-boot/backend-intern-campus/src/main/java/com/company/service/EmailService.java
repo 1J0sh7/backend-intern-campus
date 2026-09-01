@@ -7,7 +7,6 @@ import com.sendgrid.Request;
 import com.sendgrid.Response;
 import com.sendgrid.SendGrid;
 import com.sendgrid.helpers.mail.Mail;
-import com.sendgrid.helpers.mail.objects.Content;
 import com.sendgrid.helpers.mail.objects.Email;
 import com.sendgrid.helpers.mail.objects.Personalization;
 import org.slf4j.Logger;
@@ -18,6 +17,7 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.time.format.DateTimeFormatter;
 
 @Service
 public class EmailService {
@@ -28,6 +28,14 @@ public class EmailService {
     private final String fromEmail;
     private final String fromName;
 
+    // Template IDs (hardcoded)
+    private static final String TEMPLATE_WELCOME = "d-75a2fd64eab94866bb76bc28f1872edd";
+    private static final String TEMPLATE_LOAN_CREATED = "d-6baf9c2677b149448fda1e886c3baaa9";
+    private static final String TEMPLATE_LOAN_APPROVED = "d-50801dfa2535498b849e8060672a14e7";
+    private static final String TEMPLATE_LOAN_REJECTED = "d-bcfe21e718a842e3a477e85db090bd5b";
+    private static final String TEMPLATE_LOAN_DISBURSED = "d-335e389cd2e44066a865cc364fad8670";
+    private static final String TEMPLATE_REPAYMENT = "d-1c0d7df118924c2aa98744b99ad77468";
+
     public EmailService(SendGrid sendGrid,
                         @Value("${sendgrid.from-email}") String fromEmail,
                         @Value("${sendgrid.from-name}") String fromName) {
@@ -36,76 +44,90 @@ public class EmailService {
         this.fromName = fromName;
     }
 
+    // 1. Welcome Email
     public void sendWelcomeEmail(String to, String name) {
-        log.info("Attempting to send welcome email to: {}", to);
-
-        Email from = new Email(fromEmail, fromName);
-        Email toEmail = new Email(to);
-
-        Mail mail = new Mail();
-        mail.setFrom(from);
-        mail.setTemplateId("d-75a2fd64eab94866bb76bc28f1872edd");
-
+        log.info("Sending welcome email to: {}", to);
         Personalization personalization = new Personalization();
-        personalization.addTo(toEmail);
+        personalization.addTo(new Email(to));
         personalization.addDynamicTemplateData("name", name);
-        mail.addPersonalization(personalization);
-
-        send(mail);
+        sendDynamicEmail(TEMPLATE_WELCOME, personalization);
     }
 
+    // 2. Loan Application Received
     public void sendLoanCreationEmail(String to, LoanApplication loanApplication) {
-        String subject = "Loan application received";
-        String body = "Your loan application for " + loanApplication.getAmount() + " has been received and is pending review.";
-        sendPlainTextEmail(to, subject, body);
-    }
-
-    public void sendLoanApprovalEmail(String to, LoanApplication loanApplication) {
-        String subject = "Loan approved";
-        String body = "Your loan application for " + loanApplication.getAmount() + " has been approved.";
-        sendPlainTextEmail(to, subject, body);
-    }
-
-    public void sendLoanRejectionEmail(String to, LoanApplication loanApplication, String reason) {
-        String subject = "Loan application update";
-        String body = "Your loan application for " + loanApplication.getAmount() + " was rejected. Reason: " + reason;
-        sendPlainTextEmail(to, subject, body);
-    }
-
-    public void sendLoanDisbursementEmail(String to, LoanApplication loanApplication) {
-        String subject = "Loan disbursed";
-        String body = "Your loan of " + loanApplication.getAmount() + " has been disbursed.";
-        sendPlainTextEmail(to, subject, body);
-    }
-
-    public void sendRepaymentConfirmationEmail(String to, LoanApplication loanApplication, Repayment repayment) {
-        String subject = "Repayment received";
-        String body = "Payment of " + repayment.getAmount() + " was received for your loan application of " + loanApplication.getAmount() + ".";
-        sendPlainTextEmail(to, subject, body);
-    }
-
-    private void sendPlainTextEmail(String to, String subject, String body) {
-        Email from = new Email(fromEmail, fromName);
-        Email recipient = new Email(to);
-
-        Mail mail = new Mail();
-        mail.setFrom(from);
-        mail.setSubject(subject);
-        mail.addContent(new Content("text/plain", body));
-
+        log.info("Sending loan creation email to: {}", to);
         Personalization personalization = new Personalization();
-        personalization.addTo(recipient);
-        mail.addPersonalization(personalization);
+        personalization.addTo(new Email(to));
+        personalization.addDynamicTemplateData("name", loanApplication.getCustomer().getName());
+        personalization.addDynamicTemplateData("applicationId", loanApplication.getId().toString());
+        personalization.addDynamicTemplateData("amount", loanApplication.getAmount().toString());
+        personalization.addDynamicTemplateData("productName", loanApplication.getProduct().getName());
+        sendDynamicEmail(TEMPLATE_LOAN_CREATED, personalization);
+    }
 
-        send(mail);
+    // 3. Loan Approved
+    public void sendLoanApprovalEmail(String to, LoanApplication loanApplication) {
+        log.info("Sending loan approval email to: {}", to);
+        Personalization personalization = new Personalization();
+        personalization.addTo(new Email(to));
+        personalization.addDynamicTemplateData("name", loanApplication.getCustomer().getName());
+        personalization.addDynamicTemplateData("applicationId", loanApplication.getId().toString());
+        personalization.addDynamicTemplateData("amount", loanApplication.getAmount().toString());
+        personalization.addDynamicTemplateData("productName", loanApplication.getProduct().getName());
+        personalization.addDynamicTemplateData("interestRate", loanApplication.getProduct().getInterestRate().toString());
+        personalization.addDynamicTemplateData("termMonths", loanApplication.getProduct().getTermMonths().toString());
+        sendDynamicEmail(TEMPLATE_LOAN_APPROVED, personalization);
+    }
+
+    // 4. Loan Rejected
+    public void sendLoanRejectionEmail(String to, LoanApplication loanApplication, String reason) {
+        log.info("Sending loan rejection email to: {}", to);
+        Personalization personalization = new Personalization();
+        personalization.addTo(new Email(to));
+        personalization.addDynamicTemplateData("name", loanApplication.getCustomer().getName());
+        personalization.addDynamicTemplateData("applicationId", loanApplication.getId().toString());
+        personalization.addDynamicTemplateData("amount", loanApplication.getAmount().toString());
+        personalization.addDynamicTemplateData("reason", reason != null ? reason : "No reason provided");
+        sendDynamicEmail(TEMPLATE_LOAN_REJECTED, personalization);
+    }
+
+    // 5. Loan Disbursed
+    public void sendLoanDisbursementEmail(String to, LoanApplication loanApplication) {
+        log.info("Sending loan disbursement email to: {}", to);
+        Personalization personalization = new Personalization();
+        personalization.addTo(new Email(to));
+        personalization.addDynamicTemplateData("name", loanApplication.getCustomer().getName());
+        personalization.addDynamicTemplateData("applicationId", loanApplication.getId().toString());
+        personalization.addDynamicTemplateData("amount", loanApplication.getAmount().toString());
+        personalization.addDynamicTemplateData("remainingBalance", loanApplication.getRemainingBalance().toString());
+        personalization.addDynamicTemplateData("termMonths", loanApplication.getProduct().getTermMonths().toString());
+        sendDynamicEmail(TEMPLATE_LOAN_DISBURSED, personalization);
+    }
+
+    // 6. Repayment Confirmation
+    public void sendRepaymentConfirmationEmail(String to, LoanApplication loanApplication, Repayment repayment) {
+        log.info("Sending repayment confirmation email to: {}", to);
+        Personalization personalization = new Personalization();
+        personalization.addTo(new Email(to));
+        personalization.addDynamicTemplateData("name", loanApplication.getCustomer().getName());
+        personalization.addDynamicTemplateData("applicationId", loanApplication.getId().toString());
+        personalization.addDynamicTemplateData("paymentAmount", repayment.getAmount().toString());
+        personalization.addDynamicTemplateData("remainingBalance", loanApplication.getRemainingBalance().toString());
+        personalization.addDynamicTemplateData("paymentDate", repayment.getPaidDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+        sendDynamicEmail(TEMPLATE_REPAYMENT, personalization);
     }
 
     @Retryable(
-            value = {RuntimeException.class},  // <-- Retry on RuntimeException (which wraps IOException)
+            value = {RuntimeException.class},
             maxAttempts = 3,
             backoff = @Backoff(delay = 2000)
     )
-    private void send(Mail mail) {
+    private void sendDynamicEmail(String templateId, Personalization personalization) {
+        Mail mail = new Mail();
+        mail.setFrom(new Email(fromEmail, fromName));
+        mail.setTemplateId(templateId);
+        mail.addPersonalization(personalization);
+
         Request request = new Request();
         try {
             request.setMethod(Method.POST);
@@ -118,12 +140,10 @@ public class EmailService {
                 log.info("Email sent successfully");
             } else {
                 log.error("SendGrid returned error: {}", response.getBody());
-                // Throw unchecked exception so @Retryable can retry
-                throw new RuntimeException("SendGrid returned error status: " + response.getStatusCode());
+                throw new RuntimeException("SendGrid returned error: " + response.getStatusCode());
             }
         } catch (IOException ex) {
             log.error("Failed to send email: {}", ex.getMessage());
-            // Wrap checked IOException in unchecked RuntimeException for @Retryable
             throw new RuntimeException("Failed to send email", ex);
         }
     }
