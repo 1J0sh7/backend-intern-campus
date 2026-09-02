@@ -14,8 +14,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/api/v1/loan-products")
 @Tag(name = "Loan Products", description = "Loan product management endpoints")
@@ -29,7 +27,7 @@ public class LoanProductController {
 
     // 1. GET all loan products (Paginated)
     @GetMapping
-    @Operation(summary = "[PUBLIC] List loan products", description = "Returns paginated list of all loan products.")
+    @Operation(summary = "[USER] List loan products", description = "Returns paginated list of all loan products.")
     public ResponseEntity<Page<LoanProductResponseDTO>> getAllProducts(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -39,9 +37,10 @@ public class LoanProductController {
         Sort sort = Sort.by(Sort.Direction.fromString(sortDirection), sortBy);
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        // For now, just return all — you can paginate later
-        List<LoanProduct> products = loanProductService.getActiveLoanProducts();
-        Page<LoanProduct> productPage = new org.springframework.data.domain.PageImpl<>(products, pageable, products.size());
+        // ✅ This returns a real Page<LoanProduct> from the database
+        Page<LoanProduct> productPage = loanProductService.getAllProducts(pageable);
+
+        // ✅ Map to DTO
         Page<LoanProductResponseDTO> dtoPage = productPage.map(LoanMapper::toLoanProductResponseDTO);
 
         return ResponseEntity.ok(dtoPage);
@@ -49,7 +48,7 @@ public class LoanProductController {
 
     // 2. GET loan product by ID
     @GetMapping("/{id}")
-    @Operation(summary = "[PUBLIC] Get loan product by ID", description = "Returns a single loan product.")
+    @Operation(summary = "[USER] Get loan product by ID", description = "Returns a single loan product.")
     public ResponseEntity<LoanProductResponseDTO> getProductById(@PathVariable Long id) {
         LoanProduct product = loanProductService.getLoanProductById(id);
         return ResponseEntity.ok(LoanMapper.toLoanProductResponseDTO(product));

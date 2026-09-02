@@ -14,9 +14,9 @@ public class SwaggerConfig {
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
                 .info(new Info()
-                        .title("Customer API")
+                        .title("Loan_management_backend ")
                         .version("1.0")
-                        .description("Customer management API with JWT authentication"))
+                        .description("Loan_management system with JWT authentication"))
                 .addSecurityItem(new SecurityRequirement().addList("bearerAuth"))
                 .schemaRequirement("bearerAuth", new SecurityScheme()
                         .name("Authorization")

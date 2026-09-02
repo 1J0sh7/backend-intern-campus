@@ -25,25 +25,10 @@ WORKDIR /app
 # Copy the built JAR from the builder stage
 COPY --from=builder /app/build/libs/*.jar app.jar
 
+COPY src/main/resources/templates /app/templates/
+
 # Port mapping
 EXPOSE 8081
 
 # Run the app
 ENTRYPOINT ["java", "-jar", "app.jar"]
-
-
-
-
-## ./gradlew clean build -x test
-##docker compose up --build -d
-#
-#FROM eclipse-temurin:21-jdk
-#
-#WORKDIR /app
-#
-## Copy the pre-built JAR from your local machine
-#COPY build/libs/*.jar app.jar
-#
-#EXPOSE 8081
-#
-#ENTRYPOINT ["java", "-jar", "app.jar"]

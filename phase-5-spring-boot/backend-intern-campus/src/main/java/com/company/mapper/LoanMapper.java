@@ -49,15 +49,17 @@ public class LoanMapper {
                 application.getRemainingBalance() != null ? application.getRemainingBalance().doubleValue() : null
         );
     }
-
-    public static RepaymentResponseDTO toRepaymentResponseDTO(Repayment repayment) {
+    public static RepaymentResponseDTO toRepaymentResponseDTO(Repayment repayment, BigDecimal remainingBalance) {
         if (repayment == null) return null;
         return new RepaymentResponseDTO(
                 repayment.getId(),
-                repayment.getAmount().doubleValue(),  // Convert BigDecimal → Double
+                repayment.getAmount().doubleValue(),
                 repayment.getDueDate(),
                 repayment.getPaidDate(),
-                repayment.isPaid()
+                repayment.isPaid(),
+                remainingBalance != null ? remainingBalance.doubleValue() : 0.0
         );
     }
-}
+
+
+    }
