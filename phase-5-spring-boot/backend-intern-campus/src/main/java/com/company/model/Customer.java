@@ -2,11 +2,13 @@ package com.company.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import org.hibernate.annotations.SQLRestriction;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 @Table(name = "customers")
+@SQLRestriction("deleted = false")
 public class Customer {
 
     @Id
@@ -21,6 +23,9 @@ public class Customer {
 
     @Column(unique = true, nullable = false)
     private String phone;
+
+    @Column(nullable = false)
+    private boolean deleted = false;
 
     @OneToOne(mappedBy = "customer", cascade = CascadeType.ALL)
     private Address address;
@@ -54,6 +59,9 @@ public class Customer {
 
     public String getPhone() { return phone; }
     public void setPhone(String phone) { this.phone = phone; }
+
+    public boolean isDeleted() { return deleted; }
+    public void setDeleted(boolean deleted) { this.deleted = deleted; }
 
     public Address getAddress() { return address; }
     public void setAddress(Address address) { this.address = address; }

@@ -10,8 +10,7 @@ public class RepaymentResponseDTO {
     private Boolean paid;
     private Double remainingBalance;
 
-    public RepaymentResponseDTO() {}
-
+    // ✅ Constructor with 6 arguments (including remainingBalance)
     public RepaymentResponseDTO(Long id, Double amount, LocalDate dueDate, LocalDate paidDate, Boolean paid, Double remainingBalance) {
         this.id = id;
         this.amount = amount;
@@ -21,7 +20,7 @@ public class RepaymentResponseDTO {
         this.remainingBalance = remainingBalance;
     }
 
-    // Getters and Setters
+    // Getters and Setters...
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
