@@ -1,5 +1,6 @@
 package com.company.controller;
 
+import com.company.dto.LoanApplicationHistoryResponseDTO;
 import com.company.dto.LoanApplicationResponseDTO;
 import com.company.dto.RepaymentResponseDTO;
 import com.company.exception.ResourceNotFoundException;
@@ -17,6 +18,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/loan-applications")
@@ -146,5 +148,16 @@ public class LoanApplicationController {
         Sort sort = Sort.by(Sort.Direction.fromString(sortDirection), sortBy);
         Pageable pageable = PageRequest.of(page, size, sort);
         return ResponseEntity.ok(loanApplicationService.getAllApplications(pageable));
+    }
+
+    // 9. Get audit history for a loan (Admin only)
+    @GetMapping("/{id}/history")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "[ADMIN] Get audit history for a loan",
+            description = "Returns the full status change history for a loan application.")
+    public ResponseEntity<List<LoanApplicationHistoryResponseDTO>> getLoanHistory(@PathVariable Long id) {
+        // Directly get history — no extra lookup
+        List<LoanApplicationHistoryResponseDTO> history = loanApplicationService.getLoanHistory(id);
+        return ResponseEntity.ok(history);
     }
 }

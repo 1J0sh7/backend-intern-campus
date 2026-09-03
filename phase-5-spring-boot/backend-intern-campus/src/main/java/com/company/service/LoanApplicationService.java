@@ -1,5 +1,6 @@
 package com.company.service;
 
+import com.company.dto.LoanApplicationHistoryResponseDTO;
 import com.company.dto.LoanApplicationResponseDTO;
 import com.company.dto.RepaymentResponseDTO;
 import com.company.exception.CustomerHasActiveLoanException;
@@ -10,10 +11,9 @@ import com.company.exception.ResourceNotFoundException;
 import com.company.exception.ValidationException;
 import com.company.mapper.LoanMapper;
 import com.company.model.*;
-import com.company.repository.CustomerRepository;
-import com.company.repository.LoanApplicationRepository;
-import com.company.repository.LoanProductRepository;
-import com.company.repository.RepaymentRepository;
+import com.company.repository.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -27,26 +27,34 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class LoanApplicationService {
+
+    private static final Logger log = LoggerFactory.getLogger(LoanApplicationService.class);
 
     private final LoanApplicationRepository loanApplicationRepository;
     private final LoanProductRepository loanProductRepository;
     private final CustomerRepository customerRepository;
     private final RepaymentRepository repaymentRepository;
     private final EmailService emailService;
+    private final LoanApplicationHistoryRepository historyRepository;
+
+    private static final String SYSTEM_USER = "SYSTEM";
 
     public LoanApplicationService(LoanApplicationRepository loanApplicationRepository,
                                   LoanProductRepository loanProductRepository,
                                   CustomerRepository customerRepository,
                                   RepaymentRepository repaymentRepository,
-                                  EmailService emailService) {
+                                  EmailService emailService,
+                                  LoanApplicationHistoryRepository historyRepository) {
         this.loanApplicationRepository = loanApplicationRepository;
         this.loanProductRepository = loanProductRepository;
         this.customerRepository = customerRepository;
         this.repaymentRepository = repaymentRepository;
         this.emailService = emailService;
+        this.historyRepository = historyRepository;
     }
 
     // ============================================================
@@ -61,10 +69,39 @@ public class LoanApplicationService {
     }
 
     // ============================================================
+    // Helper: Save history record
+    // ============================================================
+    private void saveHistory(LoanApplication application, LoanStatus previousStatus,
+                             LoanStatus newStatus, String changedBy, String reason) {
+        LoanApplicationHistory history = new LoanApplicationHistory(
+                application, previousStatus, newStatus, changedBy, reason
+        );
+        historyRepository.save(history);
+    }
+
+    // ============================================================
+    // Helper: Centralized status change with audit
+    // ============================================================
+    @Transactional
+    protected void changeStatus(LoanApplication application,
+                                LoanStatus newStatus,
+                                String changedBy,
+                                String reason) {
+        LoanStatus previousStatus = application.getStatus();
+
+        if (previousStatus == newStatus) {
+            throw new ValidationException("Status is already " + newStatus);
+        }
+
+        application.setStatus(newStatus);
+        loanApplicationRepository.save(application);
+        saveHistory(application, previousStatus, newStatus, changedBy, reason);
+    }
+
+    // ============================================================
     // Helper: Check and update overdue status
     // ============================================================
     private void checkAndUpdateOverdueStatus(LoanApplication application) {
-        // Only check ACTIVE or DISBURSED loans
         if (application.getStatus() != LoanStatus.ACTIVE &&
                 application.getStatus() != LoanStatus.DISBURSED) {
             return;
@@ -80,8 +117,7 @@ public class LoanApplicationService {
 
         if (today.isAfter(dueDate) &&
                 application.getRemainingBalance().compareTo(BigDecimal.ZERO) > 0) {
-            application.setStatus(LoanStatus.OVERDUE);
-            loanApplicationRepository.save(application);
+            changeStatus(application, LoanStatus.OVERDUE, SYSTEM_USER, "Loan became overdue");
         }
     }
 
@@ -95,12 +131,10 @@ public class LoanApplicationService {
         Customer customer = customerRepository.findById(customerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + customerId));
 
-        // CHECK OWNERSHIP
         if (customer.getUser() == null || !customer.getUser().getUsername().equals(username)) {
             throw new ResourceNotFoundException("Customer not found with id: " + customerId);
         }
 
-        // CHECK FOR ACTIVE LOANS
         List<LoanStatus> activeStatuses = Arrays.asList(
                 LoanStatus.PENDING,
                 LoanStatus.APPROVED,
@@ -113,14 +147,13 @@ public class LoanApplicationService {
 
         if (hasActiveLoan) {
             throw new CustomerHasActiveLoanException(
-                    "Customer already has an active loan (PENDING, APPROVED, DISBURSED, or ACTIVE). Cannot apply for a new loan."
+                    "Customer already has an active loan. Cannot apply for a new loan."
             );
         }
 
         LoanProduct product = loanProductRepository.findById(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + productId));
 
-        // Business rule: amount cannot exceed maxAmount
         if (amount.compareTo(product.getMaxAmount()) > 0) {
             throw new ValidationException("Requested amount exceeds maximum allowed for this product");
         }
@@ -133,9 +166,14 @@ public class LoanApplicationService {
         application.setCreatedAt(LocalDateTime.now());
 
         LoanApplication saved = loanApplicationRepository.save(application);
+        saveHistory(saved, null, LoanStatus.PENDING, username, "Loan application submitted");
 
-        // Email: Loan Creation
-        emailService.sendLoanCreationEmail(customer.getEmail(), saved);
+        // ✅ Email OUTSIDE transaction
+        try {
+            emailService.sendLoanCreationEmail(customer.getEmail(), saved);
+        } catch (Exception e) {
+            log.error("Failed to send creation email for loan {}: {}", saved.getId(), e.getMessage());
+        }
 
         return LoanMapper.toLoanApplicationResponseDTO(saved);
     }
@@ -152,14 +190,19 @@ public class LoanApplicationService {
             throw new LoanNotPendingException("Loan is not in PENDING status. Current status: " + application.getStatus());
         }
 
-        application.setStatus(LoanStatus.APPROVED);
         application.setApprovedDate(LocalDate.now());
         application.setApprovedBy(adminUsername);
 
+        changeStatus(application, LoanStatus.APPROVED, adminUsername, null);
+
         LoanApplication saved = loanApplicationRepository.save(application);
 
-        // Email: Loan Approval
-        emailService.sendLoanApprovalEmail(application.getCustomer().getEmail(), saved);
+        // ✅ Email OUTSIDE transaction
+        try {
+            emailService.sendLoanApprovalEmail(application.getCustomer().getEmail(), saved);
+        } catch (Exception e) {
+            log.error("Failed to send approval email for loan {}: {}", applicationId, e.getMessage());
+        }
 
         return LoanMapper.toLoanApplicationResponseDTO(saved);
     }
@@ -176,19 +219,26 @@ public class LoanApplicationService {
             throw new LoanNotPendingException("Only pending applications can be rejected. Current status: " + application.getStatus());
         }
 
-        application.setStatus(LoanStatus.REJECTED);
+        String adminUsername = getCurrentUsername();
+
         application.setRejectionReason(reason);
+
+        changeStatus(application, LoanStatus.REJECTED, adminUsername, reason);
 
         LoanApplication saved = loanApplicationRepository.save(application);
 
-        // Email: Loan Rejection
-        emailService.sendLoanRejectionEmail(application.getCustomer().getEmail(), saved, reason);
+        // ✅ Email OUTSIDE transaction
+        try {
+            emailService.sendLoanRejectionEmail(application.getCustomer().getEmail(), saved, reason);
+        } catch (Exception e) {
+            log.error("Failed to send rejection email for loan {}: {}", applicationId, e.getMessage());
+        }
 
         return LoanMapper.toLoanApplicationResponseDTO(saved);
     }
 
     // ============================================================
-    // 4. Disburse a loan (Admin) — WITH INTEREST CALCULATION
+    // 4. Disburse a loan (Admin)
     // ============================================================
     @Transactional
     public LoanApplicationResponseDTO disburseLoan(Long applicationId) {
@@ -205,19 +255,28 @@ public class LoanApplicationService {
         BigDecimal interestMultiplier = BigDecimal.ONE.add(interestRate.divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP));
         BigDecimal totalPayable = principal.multiply(interestMultiplier);
 
-        application.setStatus(LoanStatus.DISBURSED);
+        String adminUsername = getCurrentUsername();
+
         application.setDisbursedDate(LocalDate.now());
         application.setRemainingBalance(totalPayable);
 
+        changeStatus(application, LoanStatus.DISBURSED, adminUsername, null);
+
         LoanApplication saved = loanApplicationRepository.save(application);
 
-        // Email: Disbursement
-        emailService.sendLoanDisbursementEmail(application.getCustomer().getEmail(), saved);
+        // ✅ Email OUTSIDE transaction
+        try {
+            emailService.sendLoanDisbursementEmail(application.getCustomer().getEmail(), saved);
+        } catch (Exception e) {
+            log.error("Failed to send disbursement email for loan {}: {}", applicationId, e.getMessage());
+        }
 
         return LoanMapper.toLoanApplicationResponseDTO(saved);
     }
 
+    // ============================================================
     // 5. Make a repayment
+    // ============================================================
     @Transactional
     public RepaymentResponseDTO makeRepayment(Long applicationId, BigDecimal amount) {
         String username = getCurrentUsername();
@@ -225,7 +284,6 @@ public class LoanApplicationService {
         LoanApplication application = loanApplicationRepository.findById(applicationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Application not found with id: " + applicationId));
 
-        // CHECK OWNERSHIP
         if (application.getCustomer() == null || application.getCustomer().getUser() == null) {
             throw new ResourceNotFoundException("Application not found with id: " + applicationId);
         }
@@ -234,11 +292,10 @@ public class LoanApplicationService {
             throw new ResourceNotFoundException("Application not found with id: " + applicationId);
         }
 
-        // CHECK OVERDUE STATUS
         checkAndUpdateOverdueStatus(application);
 
         if (application.getStatus() == LoanStatus.OVERDUE) {
-            throw new ValidationException("This loan is OVERDUE. Please contact support to arrange payment.");
+            throw new ValidationException("This loan is OVERDUE. Please contact support.");
         }
 
         if (application.getStatus() == LoanStatus.COMPLETED) {
@@ -249,26 +306,22 @@ public class LoanApplicationService {
             throw new ValidationException("Loan is not active/disbursed. Current status: " + application.getStatus());
         }
 
-        // Validate amount is not negative
         if (amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new ValidationException("Amount cannot be negative or zero");
         }
 
-        //  Validate amount does not exceed remaining balance
         if (amount.compareTo(application.getRemainingBalance()) > 0) {
             throw new InsufficientBalanceException("Repayment amount exceeds remaining balance");
         }
 
-        //  DYNAMIC MONTHLY MINIMUM
+        // Dynamic minimum payment
         int termMonths = application.getProduct().getTermMonths();
         LocalDate disbursedDate = application.getDisbursedDate();
         LocalDate now = LocalDate.now();
 
-        // Count how many months have passed since disbursement
         long monthsPassed = java.time.temporal.ChronoUnit.MONTHS.between(disbursedDate, now);
         int remainingMonths = (int) Math.max(1, termMonths - monthsPassed);
 
-        // Minimum = remaining balance / remaining months
         BigDecimal monthlyMinimum = application.getRemainingBalance()
                 .divide(BigDecimal.valueOf(remainingMonths), 2, RoundingMode.HALF_UP);
 
@@ -285,7 +338,6 @@ public class LoanApplicationService {
         repayment.setDueDate(LocalDate.now());
         repayment.setPaidDate(LocalDate.now());
         repayment.setStatus("PAID");
-
         Repayment saved = repaymentRepository.save(repayment);
 
         // Update remaining balance
@@ -293,27 +345,32 @@ public class LoanApplicationService {
         application.setRemainingBalance(newBalance);
 
         if (newBalance.compareTo(BigDecimal.ZERO) <= 0) {
-            application.setStatus(LoanStatus.COMPLETED);
+            changeStatus(application, LoanStatus.COMPLETED, username, "Loan fully repaid");
         } else {
-            application.setStatus(LoanStatus.ACTIVE);
+            if (application.getStatus() == LoanStatus.DISBURSED) {
+                changeStatus(application, LoanStatus.ACTIVE, username, "First repayment made");
+            }
         }
 
         loanApplicationRepository.save(application);
 
-        // Email: Repayment Confirmation
-        emailService.sendRepaymentConfirmationEmail(application.getCustomer().getEmail(), application, saved);
+        // ✅ Email OUTSIDE transaction
+        try {
+            emailService.sendRepaymentConfirmationEmail(application.getCustomer().getEmail(), application, saved);
+        } catch (Exception e) {
+            log.error("Failed to send repayment confirmation email for loan {}: {}", applicationId, e.getMessage());
+        }
 
         return LoanMapper.toRepaymentResponseDTO(saved, application.getRemainingBalance());
     }
+
     // ============================================================
     // 6. Get application by ID
     // ============================================================
     public LoanApplicationResponseDTO getApplicationById(Long id) {
         LoanApplication application = loanApplicationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Application not found with id: " + id));
-
         checkAndUpdateOverdueStatus(application);
-
         return LoanMapper.toLoanApplicationResponseDTO(application);
     }
 
@@ -328,13 +385,11 @@ public class LoanApplicationService {
             throw new ResourceNotFoundException("Loan application not found with id: " + id);
         }
 
-        String loanOwnerUsername = application.getCustomer().getUser().getUsername();
-        if (!loanOwnerUsername.equals(username)) {
+        if (!application.getCustomer().getUser().getUsername().equals(username)) {
             throw new ResourceNotFoundException("Loan application not found with id: " + id);
         }
 
         checkAndUpdateOverdueStatus(application);
-
         return LoanMapper.toLoanApplicationResponseDTO(application);
     }
 
@@ -351,7 +406,6 @@ public class LoanApplicationService {
 
         Page<LoanApplication> page = loanApplicationRepository.findByCustomer(customer, pageable);
         page.getContent().forEach(this::checkAndUpdateOverdueStatus);
-
         return page.map(LoanMapper::toLoanApplicationResponseDTO);
     }
 
@@ -364,7 +418,6 @@ public class LoanApplicationService {
 
         Page<LoanApplication> page = loanApplicationRepository.findByCustomer(customer, pageable);
         page.getContent().forEach(this::checkAndUpdateOverdueStatus);
-
         return page.map(LoanMapper::toLoanApplicationResponseDTO);
     }
 
@@ -374,7 +427,20 @@ public class LoanApplicationService {
     public Page<LoanApplicationResponseDTO> getAllApplications(Pageable pageable) {
         Page<LoanApplication> page = loanApplicationRepository.findAll(pageable);
         page.getContent().forEach(this::checkAndUpdateOverdueStatus);
-
         return page.map(LoanMapper::toLoanApplicationResponseDTO);
+    }
+
+    // ============================================================
+    // 11. Get audit history for a loan (returns DTOs directly)
+    // ============================================================
+    public List<LoanApplicationHistoryResponseDTO> getLoanHistory(Long applicationId) {
+        LoanApplication application = loanApplicationRepository.findById(applicationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Application not found with id: " + applicationId));
+
+        List<LoanApplicationHistory> history = historyRepository.findByLoanApplicationOrderByChangedAtDesc(application);
+
+        return history.stream()
+                .map(LoanMapper::toHistoryResponseDTO)
+                .collect(Collectors.toList());
     }
 }
