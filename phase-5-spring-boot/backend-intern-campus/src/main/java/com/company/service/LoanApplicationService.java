@@ -3,9 +3,11 @@ package com.company.service;
 import com.company.dto.LoanApplicationResponseDTO;
 import com.company.dto.RepaymentResponseDTO;
 import com.company.exception.CustomerHasActiveLoanException;
+import com.company.exception.InsufficientBalanceException;
+import com.company.exception.LoanNotApprovedException;
+import com.company.exception.LoanNotPendingException;
 import com.company.exception.ResourceNotFoundException;
 import com.company.exception.ValidationException;
-import com.company.exception.*;
 import com.company.mapper.LoanMapper;
 import com.company.model.*;
 import com.company.repository.CustomerRepository;
@@ -47,7 +49,45 @@ public class LoanApplicationService {
         this.emailService = emailService;
     }
 
+    // ============================================================
+    // Helper: Get current username from SecurityContext
+    // ============================================================
+    private String getCurrentUsername() {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (principal instanceof UserDetails) {
+            return ((UserDetails) principal).getUsername();
+        }
+        return principal.toString();
+    }
+
+    // ============================================================
+    // Helper: Check and update overdue status
+    // ============================================================
+    private void checkAndUpdateOverdueStatus(LoanApplication application) {
+        // Only check ACTIVE or DISBURSED loans
+        if (application.getStatus() != LoanStatus.ACTIVE &&
+                application.getStatus() != LoanStatus.DISBURSED) {
+            return;
+        }
+
+        if (application.getDisbursedDate() == null) {
+            return;
+        }
+
+        LocalDate today = LocalDate.now();
+        LocalDate dueDate = application.getDisbursedDate()
+                .plusMonths(application.getProduct().getTermMonths());
+
+        if (today.isAfter(dueDate) &&
+                application.getRemainingBalance().compareTo(BigDecimal.ZERO) > 0) {
+            application.setStatus(LoanStatus.OVERDUE);
+            loanApplicationRepository.save(application);
+        }
+    }
+
+    // ============================================================
     // 1. Apply for a loan
+    // ============================================================
     @Transactional
     public LoanApplicationResponseDTO applyForLoan(Long customerId, Long productId, BigDecimal amount) {
         String username = getCurrentUsername();
@@ -65,7 +105,8 @@ public class LoanApplicationService {
                 LoanStatus.PENDING,
                 LoanStatus.APPROVED,
                 LoanStatus.DISBURSED,
-                LoanStatus.ACTIVE
+                LoanStatus.ACTIVE,
+                LoanStatus.OVERDUE
         );
 
         boolean hasActiveLoan = loanApplicationRepository.existsByCustomerAndStatusIn(customer, activeStatuses);
@@ -99,7 +140,9 @@ public class LoanApplicationService {
         return LoanMapper.toLoanApplicationResponseDTO(saved);
     }
 
+    // ============================================================
     // 2. Approve a loan (Admin)
+    // ============================================================
     @Transactional
     public LoanApplicationResponseDTO approveLoan(Long applicationId, String adminUsername) {
         LoanApplication application = loanApplicationRepository.findById(applicationId)
@@ -113,9 +156,6 @@ public class LoanApplicationService {
         application.setApprovedDate(LocalDate.now());
         application.setApprovedBy(adminUsername);
 
-        // Generate Repayment Schedule (Max 12 months)
-        generateRepaymentSchedule(application);
-
         LoanApplication saved = loanApplicationRepository.save(application);
 
         // Email: Loan Approval
@@ -124,7 +164,9 @@ public class LoanApplicationService {
         return LoanMapper.toLoanApplicationResponseDTO(saved);
     }
 
+    // ============================================================
     // 3. Reject a loan (Admin)
+    // ============================================================
     @Transactional
     public LoanApplicationResponseDTO rejectLoan(Long applicationId, String reason) {
         LoanApplication application = loanApplicationRepository.findById(applicationId)
@@ -133,9 +175,6 @@ public class LoanApplicationService {
         if (application.getStatus() != LoanStatus.PENDING) {
             throw new LoanNotPendingException("Only pending applications can be rejected. Current status: " + application.getStatus());
         }
-
-        // Delete any generated repayments
-        repaymentRepository.deleteByLoanApplication(application);
 
         application.setStatus(LoanStatus.REJECTED);
         application.setRejectionReason(reason);
@@ -148,7 +187,9 @@ public class LoanApplicationService {
         return LoanMapper.toLoanApplicationResponseDTO(saved);
     }
 
-    // 4. Disburse a loan (Admin)
+    // ============================================================
+    // 4. Disburse a loan (Admin) — WITH INTEREST CALCULATION
+    // ============================================================
     @Transactional
     public LoanApplicationResponseDTO disburseLoan(Long applicationId) {
         LoanApplication application = loanApplicationRepository.findById(applicationId)
@@ -158,15 +199,15 @@ public class LoanApplicationService {
             throw new LoanNotApprovedException("Only approved loans can be disbursed. Current status: " + application.getStatus());
         }
 
-        // CALCULATE INTEREST
+        // Calculate interest
         BigDecimal principal = application.getAmount();
-        BigDecimal interestRate = BigDecimal.valueOf(application.getProduct().getInterestRate()); // e.g., 5.5 means 5.5%
+        BigDecimal interestRate = BigDecimal.valueOf(application.getProduct().getInterestRate());
         BigDecimal interestMultiplier = BigDecimal.ONE.add(interestRate.divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP));
         BigDecimal totalPayable = principal.multiply(interestMultiplier);
 
         application.setStatus(LoanStatus.DISBURSED);
         application.setDisbursedDate(LocalDate.now());
-        application.setRemainingBalance(totalPayable);  //  Set to total payable (principal + interest)
+        application.setRemainingBalance(totalPayable);
 
         LoanApplication saved = loanApplicationRepository.save(application);
 
@@ -175,7 +216,6 @@ public class LoanApplicationService {
 
         return LoanMapper.toLoanApplicationResponseDTO(saved);
     }
-
 
     // 5. Make a repayment
     @Transactional
@@ -194,77 +234,66 @@ public class LoanApplicationService {
             throw new ResourceNotFoundException("Application not found with id: " + applicationId);
         }
 
+        // CHECK OVERDUE STATUS
+        checkAndUpdateOverdueStatus(application);
+
+        if (application.getStatus() == LoanStatus.OVERDUE) {
+            throw new ValidationException("This loan is OVERDUE. Please contact support to arrange payment.");
+        }
+
+        if (application.getStatus() == LoanStatus.COMPLETED) {
+            throw new ValidationException("This loan has already been fully paid.");
+        }
+
         if (application.getStatus() != LoanStatus.DISBURSED && application.getStatus() != LoanStatus.ACTIVE) {
             throw new ValidationException("Loan is not active/disbursed. Current status: " + application.getStatus());
         }
 
-        //  FIND FIRST PENDING REPAYMENT
-        List<Repayment> pendingRepayments = repaymentRepository.findByLoanApplicationAndStatusOrderByDueDateAsc(application, "PENDING");
-        Repayment repayment;
-
-        if (pendingRepayments.isEmpty()) {
-            // No pending repayments — this means all are paid
-            throw new ValidationException("All repayments have already been made. Loan is fully paid.");
+        // Validate amount is not negative
+        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new ValidationException("Amount cannot be negative or zero");
         }
 
-        //  GET THE NEXT PENDING REPAYMENT
-        Repayment nextRepayment = pendingRepayments.get(0);
-
-        //  Validate repayment amount does not exceed remaining balance
+        //  Validate amount does not exceed remaining balance
         if (amount.compareTo(application.getRemainingBalance()) > 0) {
-            // Overpayment — mark ALL remaining as PAID
-            for (Repayment r : pendingRepayments) {
-                r.setStatus("PAID");
-                r.setPaidDate(LocalDate.now());
-                repaymentRepository.save(r);
-            }
-            // Create a single repayment record for the overpayment
-            repayment = new Repayment();
-            repayment.setLoanApplication(application);
-            repayment.setAmount(amount);
-            repayment.setDueDate(LocalDate.now());
-            repayment.setPaidDate(LocalDate.now());
-            repayment.setStatus("PAID");
-            Repayment saved = repaymentRepository.save(repayment);
-
-            application.setRemainingBalance(BigDecimal.ZERO);
-            application.setStatus(LoanStatus.COMPLETED);
-            loanApplicationRepository.save(application);
-
-            // Email: Repayment Confirmation
-            emailService.sendRepaymentConfirmationEmail(application.getCustomer().getEmail(), application, saved);
-
-            return LoanMapper.toRepaymentResponseDTO(saved, application.getRemainingBalance());
+            throw new InsufficientBalanceException("Repayment amount exceeds remaining balance");
         }
 
-        //  Normal repayment — mark the next pending row as PAID
-        nextRepayment.setPaidDate(LocalDate.now());
-        nextRepayment.setStatus("PAID");
-        repaymentRepository.save(nextRepayment);
+        //  DYNAMIC MONTHLY MINIMUM
+        int termMonths = application.getProduct().getTermMonths();
+        LocalDate disbursedDate = application.getDisbursedDate();
+        LocalDate now = LocalDate.now();
 
-        // Create a repayment record for the actual payment
-        repayment = new Repayment();
+        // Count how many months have passed since disbursement
+        long monthsPassed = java.time.temporal.ChronoUnit.MONTHS.between(disbursedDate, now);
+        int remainingMonths = (int) Math.max(1, termMonths - monthsPassed);
+
+        // Minimum = remaining balance / remaining months
+        BigDecimal monthlyMinimum = application.getRemainingBalance()
+                .divide(BigDecimal.valueOf(remainingMonths), 2, RoundingMode.HALF_UP);
+
+        if (amount.compareTo(monthlyMinimum) < 0) {
+            throw new ValidationException(
+                    "Amount is less than the minimum monthly payment of $" + monthlyMinimum.toPlainString()
+            );
+        }
+
+        // Create repayment record
+        Repayment repayment = new Repayment();
         repayment.setLoanApplication(application);
         repayment.setAmount(amount);
         repayment.setDueDate(LocalDate.now());
         repayment.setPaidDate(LocalDate.now());
         repayment.setStatus("PAID");
+
         Repayment saved = repaymentRepository.save(repayment);
 
         // Update remaining balance
         BigDecimal newBalance = application.getRemainingBalance().subtract(amount);
         application.setRemainingBalance(newBalance);
 
-        // If balance is zero or less, mark as COMPLETED
         if (newBalance.compareTo(BigDecimal.ZERO) <= 0) {
             application.setStatus(LoanStatus.COMPLETED);
-            // Mark any remaining pending repayments as PAID
-            List<Repayment> remainingPending = repaymentRepository.findByLoanApplicationAndStatusOrderByDueDateAsc(application, "PENDING");
-            for (Repayment r : remainingPending) {
-                r.setStatus("PAID");
-                r.setPaidDate(LocalDate.now());
-                repaymentRepository.save(r);
-            }
         } else {
             application.setStatus(LoanStatus.ACTIVE);
         }
@@ -276,40 +305,25 @@ public class LoanApplicationService {
 
         return LoanMapper.toRepaymentResponseDTO(saved, application.getRemainingBalance());
     }
-
-    // 6. Get application by ID (returns DTO)
+    // ============================================================
+    // 6. Get application by ID
+    // ============================================================
     public LoanApplicationResponseDTO getApplicationById(Long id) {
         LoanApplication application = loanApplicationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Application not found with id: " + id));
+
+        checkAndUpdateOverdueStatus(application);
+
         return LoanMapper.toLoanApplicationResponseDTO(application);
     }
 
-    // 7. Get all applications for a customer (with Pagination)
-    public Page<LoanApplicationResponseDTO> getApplicationsByCustomer(Long customerId, Pageable pageable, String username) {
-        Customer customer = customerRepository.findById(customerId)
-                .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + customerId));
-
-        // CHECK OWNERSHIP
-        if (customer.getUser() == null || !customer.getUser().getUsername().equals(username)) {
-            throw new ResourceNotFoundException("Customer not found with id: " + customerId);
-        }
-
-        Page<LoanApplication> page = loanApplicationRepository.findByCustomer(customer, pageable);
-        return page.map(LoanMapper::toLoanApplicationResponseDTO);
-    }
-
-    // 8. Get all applications (Admin) — with Pagination
-    public Page<LoanApplicationResponseDTO> getAllApplications(Pageable pageable) {
-        Page<LoanApplication> page = loanApplicationRepository.findAll(pageable);
-        return page.map(LoanMapper::toLoanApplicationResponseDTO);
-    }
-
-    // 09 ownership check
+    // ============================================================
+    // 7. Get application by ID for user (with ownership check)
+    // ============================================================
     public LoanApplicationResponseDTO getApplicationByIdForUser(Long id, String username) {
         LoanApplication application = loanApplicationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Loan application not found with id: " + id));
 
-        // ADDED NULL CHECK
         if (application.getCustomer() == null || application.getCustomer().getUser() == null) {
             throw new ResourceNotFoundException("Loan application not found with id: " + id);
         }
@@ -319,52 +333,48 @@ public class LoanApplicationService {
             throw new ResourceNotFoundException("Loan application not found with id: " + id);
         }
 
+        checkAndUpdateOverdueStatus(application);
+
         return LoanMapper.toLoanApplicationResponseDTO(application);
     }
 
-    // for ADMIN
-    public Page<LoanApplicationResponseDTO> getApplicationsByCustomerForAdmin(Long customerId, Pageable pageable) {
+    // ============================================================
+    // 8. Get all applications for a customer (with Pagination)
+    // ============================================================
+    public Page<LoanApplicationResponseDTO> getApplicationsByCustomer(Long customerId, Pageable pageable, String username) {
         Customer customer = customerRepository.findById(customerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + customerId));
+
+        if (customer.getUser() == null || !customer.getUser().getUsername().equals(username)) {
+            throw new ResourceNotFoundException("Customer not found with id: " + customerId);
+        }
+
         Page<LoanApplication> page = loanApplicationRepository.findByCustomer(customer, pageable);
+        page.getContent().forEach(this::checkAndUpdateOverdueStatus);
+
         return page.map(LoanMapper::toLoanApplicationResponseDTO);
     }
 
-    // ===== Helper: Get current username from SecurityContext =====
-    private String getCurrentUsername() {
-        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if (principal instanceof UserDetails) {
-            return ((UserDetails) principal).getUsername();
-        }
-        return principal.toString();
+    // ============================================================
+    // 9. Get all applications for a customer (Admin)
+    // ============================================================
+    public Page<LoanApplicationResponseDTO> getApplicationsByCustomerForAdmin(Long customerId, Pageable pageable) {
+        Customer customer = customerRepository.findById(customerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + customerId));
+
+        Page<LoanApplication> page = loanApplicationRepository.findByCustomer(customer, pageable);
+        page.getContent().forEach(this::checkAndUpdateOverdueStatus);
+
+        return page.map(LoanMapper::toLoanApplicationResponseDTO);
     }
 
-    // ===== Helper: Generate repayment schedule (MAX 12 MONTHS) =====
-    private void generateRepaymentSchedule(LoanApplication application) {
-        int months = application.getProduct().getTermMonths();
+    // ============================================================
+    // 10. Get all applications (Admin)
+    // ============================================================
+    public Page<LoanApplicationResponseDTO> getAllApplications(Pageable pageable) {
+        Page<LoanApplication> page = loanApplicationRepository.findAll(pageable);
+        page.getContent().forEach(this::checkAndUpdateOverdueStatus);
 
-        // Enforce 12-month maximum
-        if (months > 12) {
-            throw new ValidationException("Loan term cannot exceed 12 months");
-        }
-
-        // Calculate interest first
-        BigDecimal principal = application.getAmount();
-        BigDecimal interestRate = BigDecimal.valueOf(application.getProduct().getInterestRate());
-        BigDecimal interestMultiplier = BigDecimal.ONE.add(interestRate.divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP));
-        BigDecimal totalPayable = principal.multiply(interestMultiplier);
-
-        BigDecimal monthlyAmount = totalPayable.divide(BigDecimal.valueOf(months), 2, RoundingMode.HALF_UP);
-        LocalDate startDate = LocalDate.now();
-
-        for (int i = 1; i <= months; i++) {
-            Repayment repayment = new Repayment();
-            repayment.setLoanApplication(application);
-            repayment.setAmount(monthlyAmount);
-            repayment.setDueDate(startDate.plusMonths(i));
-            repayment.setPaidDate(null);
-            repayment.setStatus("PENDING");  //  ADDED STATUS
-            repaymentRepository.save(repayment);
-        }
+        return page.map(LoanMapper::toLoanApplicationResponseDTO);
     }
 }

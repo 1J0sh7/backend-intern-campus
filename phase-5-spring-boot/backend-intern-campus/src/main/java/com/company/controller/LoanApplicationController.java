@@ -3,7 +3,6 @@ package com.company.controller;
 import com.company.dto.LoanApplicationResponseDTO;
 import com.company.dto.RepaymentResponseDTO;
 import com.company.exception.ResourceNotFoundException;
-import com.company.model.Repayment;
 import com.company.service.LoanApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -51,7 +50,6 @@ public class LoanApplicationController {
     public ResponseEntity<LoanApplicationResponseDTO> getApplication(@PathVariable Long id, Authentication authentication) {
         String username = authentication.getName();
 
-        // Check if user is ADMIN → allow access
         boolean isAdmin = authentication.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
 
@@ -79,20 +77,16 @@ public class LoanApplicationController {
 
         String username = authentication.getName();
 
-        // Check if user is ADMIN
         boolean isAdmin = authentication.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
 
         Page<LoanApplicationResponseDTO> result;
+        Sort sort = Sort.by(Sort.Direction.fromString(sortDirection), sortBy);
+        Pageable pageable = PageRequest.of(page, size, sort);
+
         if (isAdmin) {
-            // Admin can view any customer's loans
-            Sort sort = Sort.by(Sort.Direction.fromString(sortDirection), sortBy);
-            Pageable pageable = PageRequest.of(page, size, sort);
             result = loanApplicationService.getApplicationsByCustomerForAdmin(customerId, pageable);
         } else {
-            // User can only view their own loans
-            Sort sort = Sort.by(Sort.Direction.fromString(sortDirection), sortBy);
-            Pageable pageable = PageRequest.of(page, size, sort);
             result = loanApplicationService.getApplicationsByCustomer(customerId, pageable, username);
         }
 
@@ -118,7 +112,7 @@ public class LoanApplicationController {
         return ResponseEntity.ok(loanApplicationService.rejectLoan(id, reason));
     }
 
-    // 6. Admin DisbursING a loan
+    // 6. Admin: Disburse a loan
     @PutMapping("/{id}/disburse")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "[ADMIN] Disburse a loan", description = "Admin-only. Marks an approved loan as disbursed, activating it for repayment.")

@@ -231,7 +231,8 @@ public class CustomerService {
             throw new AccessDeniedException("Only ADMIN can delete customers");
         }
 
-        customerRepository.deleteById(id);
+        existing.setDeleted(true);
+        customerRepository.save(existing);
         return true;
     }
 

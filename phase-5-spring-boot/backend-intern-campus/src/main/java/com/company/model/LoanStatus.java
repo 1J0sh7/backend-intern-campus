@@ -5,6 +5,7 @@ public enum LoanStatus {
     APPROVED,    // Admin approved, waiting for disbursement
     REJECTED,    // Admin rejected
     DISBURSED,   // Money sent to customer
-    ACTIVE,      // Loan is active (repayments ongoing)
+    ACTIVE, // Loan is active (repayments ongoing)
+    OVERDUE,
     COMPLETED    // All repayments done
 }

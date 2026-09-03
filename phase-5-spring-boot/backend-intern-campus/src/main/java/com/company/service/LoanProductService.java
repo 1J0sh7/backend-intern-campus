@@ -1,6 +1,7 @@
 package com.company.service;
 
 import com.company.exception.ResourceNotFoundException;
+import com.company.exception.ValidationException;
 import com.company.model.LoanProduct;
 import com.company.repository.LoanProductRepository;
 import org.springframework.data.domain.Page;
@@ -19,8 +20,9 @@ public class LoanProductService {
     }
 
     public LoanProduct createLoanProduct(LoanProduct product) {
-        if (product.getTermMonths() > 12) {
-            throw new RuntimeException("Loan term cannot exceed 12 months");
+        // ✅ No 12-month limit — any term allowed
+        if (product.getTermMonths() < 1) {
+            throw new ValidationException("Loan term must be at least 1 month");
         }
         return loanProductRepository.save(product);
     }
@@ -36,6 +38,12 @@ public class LoanProductService {
 
     public LoanProduct updateLoanProduct(Long id, LoanProduct updatedProduct) {
         LoanProduct existing = getLoanProductById(id);
+
+        //  No 12-month limit — any term allowed
+        if (updatedProduct.getTermMonths() < 1) {
+            throw new ValidationException("Loan term must be at least 1 month");
+        }
+
         existing.setName(updatedProduct.getName());
         existing.setDescription(updatedProduct.getDescription());
         existing.setInterestRate(updatedProduct.getInterestRate());
