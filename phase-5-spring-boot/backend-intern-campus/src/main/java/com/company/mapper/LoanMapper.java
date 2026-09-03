@@ -1,13 +1,11 @@
 package com.company.mapper;
 
-import com.company.dto.CustomerResponse;
-import com.company.dto.LoanApplicationResponseDTO;
-import com.company.dto.LoanProductResponseDTO;
-import com.company.dto.RepaymentResponseDTO;
+import com.company.dto.*;
 import com.company.model.Customer;
 import com.company.model.LoanApplication;
 import com.company.model.LoanProduct;
 import com.company.model.Repayment;
+import com.company.model.LoanApplicationHistory;
 
 import java.math.BigDecimal;
 
@@ -29,9 +27,9 @@ public class LoanMapper {
                 product.getId(),
                 product.getName(),
                 product.getDescription(),
-                product.getInterestRate().doubleValue(),    // Convert BigDecimal → Double
+                product.getInterestRate().doubleValue(),
                 product.getTermMonths(),
-                product.getMaxAmount().doubleValue()        // Convert BigDecimal → Double
+                product.getMaxAmount().doubleValue()
         );
     }
 
@@ -41,7 +39,7 @@ public class LoanMapper {
                 application.getId(),
                 toCustomerResponse(application.getCustomer()),
                 toLoanProductResponseDTO(application.getProduct()),
-                application.getAmount().doubleValue(),           // Convert BigDecimal → Double
+                application.getAmount().doubleValue(),
                 application.getStatus(),
                 application.getCreatedAt(),
                 application.getApprovedDate(),
@@ -49,6 +47,7 @@ public class LoanMapper {
                 application.getRemainingBalance() != null ? application.getRemainingBalance().doubleValue() : null
         );
     }
+
     public static RepaymentResponseDTO toRepaymentResponseDTO(Repayment repayment, BigDecimal remainingBalance) {
         if (repayment == null) return null;
         return new RepaymentResponseDTO(
@@ -61,5 +60,16 @@ public class LoanMapper {
         );
     }
 
-
+    public static LoanApplicationHistoryResponseDTO toHistoryResponseDTO(LoanApplicationHistory history) {
+        if (history == null) return null;
+        return new LoanApplicationHistoryResponseDTO(
+                history.getId(),
+                history.getLoanApplication().getId(),
+                history.getPreviousStatus() != null ? history.getPreviousStatus().name() : null,
+                history.getNewStatus().name(),
+                history.getChangedBy(),
+                history.getReason(),
+                history.getChangedAt()
+        );
+    }
 }

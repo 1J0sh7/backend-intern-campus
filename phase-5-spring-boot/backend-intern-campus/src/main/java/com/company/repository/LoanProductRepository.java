@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface LoanProductRepository extends JpaRepository<LoanProduct, Long> {
@@ -14,6 +15,7 @@ public interface LoanProductRepository extends JpaRepository<LoanProduct, Long> 
 
     List<LoanProduct> findByActiveTrue();
 
-    // Pageable method (already provided by JpaRepository)
-    Page<LoanProduct> findAll(Pageable pageable);
+    Page<LoanProduct> findByActiveTrue(Pageable pageable);
+
+    Optional<LoanProduct> findByIdAndActiveTrue(Long id);
 }

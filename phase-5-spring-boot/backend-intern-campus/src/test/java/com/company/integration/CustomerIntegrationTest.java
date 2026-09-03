@@ -7,6 +7,7 @@ import com.company.dto.RegisterRequest;
 import com.company.model.Customer;
 import com.company.repository.CustomerRepository;
 import com.company.repository.UserRepository;
+import com.company.service.EmailService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -18,6 +19,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Optional;
@@ -49,6 +51,9 @@ class CustomerIntegrationTest {
 
     @Autowired
     private UserRepository userRepository;
+
+    @MockitoBean
+    private EmailService emailService;
 
     // Shared across ordered tests. @TestInstance(PER_CLASS) keeps one
     // instance for the whole class, so these fields survive between tests.

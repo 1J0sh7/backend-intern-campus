@@ -28,11 +28,11 @@ public class LoanProductService {
     }
 
     public Page<LoanProduct> getAllProducts(Pageable pageable) {
-        return loanProductRepository.findAll(pageable);
+        return loanProductRepository.findByActiveTrue(pageable);
     }
 
     public LoanProduct getLoanProductById(Long id) {
-        return loanProductRepository.findById(id)
+        return loanProductRepository.findByIdAndActiveTrue(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Loan product not found with id: " + id));
     }
 

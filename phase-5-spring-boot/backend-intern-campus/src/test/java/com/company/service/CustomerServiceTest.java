@@ -442,7 +442,8 @@ class CustomerServiceTest {
         boolean result = customerService.deleteCustomer(1L);
 
         assertThat(result).isTrue();
-        verify(customerRepository).deleteById(1L);
+        assertThat(testCustomer.isDeleted()).isTrue();
+        verify(customerRepository).save(testCustomer);
     }
 
 
