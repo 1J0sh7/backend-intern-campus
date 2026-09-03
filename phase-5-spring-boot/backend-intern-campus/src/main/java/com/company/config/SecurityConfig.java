@@ -97,7 +97,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/v1/loan-applications/{id}/disburse").hasRole("ADMIN")  // FIXED
                         .requestMatchers(HttpMethod.POST, "/api/v1/loan-applications/{id}/repayments").authenticated() // FIXED
 
-                        // ==================== ALL OTHER REQUESTS ====================
+                        // ==================== ALL OTHER REQUESTS HERE ====================
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())
