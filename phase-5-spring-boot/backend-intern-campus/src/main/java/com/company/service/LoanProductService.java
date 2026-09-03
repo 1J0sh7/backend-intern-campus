@@ -20,7 +20,7 @@ public class LoanProductService {
     }
 
     public LoanProduct createLoanProduct(LoanProduct product) {
-        // ✅ No 12-month limit — any term allowed
+        // No 12-month limit — any term allowed
         if (product.getTermMonths() < 1) {
             throw new ValidationException("Loan term must be at least 1 month");
         }
