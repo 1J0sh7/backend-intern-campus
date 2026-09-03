@@ -1,6 +1,8 @@
 package com.company.controller;
 
 import com.company.dto.LoanApplicationResponseDTO;
+import com.company.dto.RepaymentResponseDTO;
+import com.company.exception.ResourceNotFoundException;
 import com.company.model.Repayment;
 import com.company.service.LoanApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -46,8 +48,21 @@ public class LoanApplicationController {
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "[USER/ADMIN] Get loan application by ID", description = "Returns a single loan application. Users can view their own applications; admins can view any.")
-    public ResponseEntity<LoanApplicationResponseDTO> getApplication(@PathVariable Long id) {
-        return ResponseEntity.ok(loanApplicationService.getApplicationById(id));
+    public ResponseEntity<LoanApplicationResponseDTO> getApplication(@PathVariable Long id, Authentication authentication) {
+        String username = authentication.getName();
+
+        // Check if user is ADMIN → allow access
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        LoanApplicationResponseDTO application;
+        if (isAdmin) {
+            application = loanApplicationService.getApplicationById(id);
+        } else {
+            application = loanApplicationService.getApplicationByIdForUser(id, username);
+        }
+
+        return ResponseEntity.ok(application);
     }
 
     // 3. Get all applications for a specific customer (with Pagination)
@@ -59,11 +74,29 @@ public class LoanApplicationController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
-            @RequestParam(defaultValue = "desc") String sortDirection) {
+            @RequestParam(defaultValue = "desc") String sortDirection,
+            Authentication authentication) {
 
-        Sort sort = Sort.by(Sort.Direction.fromString(sortDirection), sortBy);
-        Pageable pageable = PageRequest.of(page, size, sort);
-        return ResponseEntity.ok(loanApplicationService.getApplicationsByCustomer(customerId, pageable));
+        String username = authentication.getName();
+
+        // Check if user is ADMIN
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        Page<LoanApplicationResponseDTO> result;
+        if (isAdmin) {
+            // Admin can view any customer's loans
+            Sort sort = Sort.by(Sort.Direction.fromString(sortDirection), sortBy);
+            Pageable pageable = PageRequest.of(page, size, sort);
+            result = loanApplicationService.getApplicationsByCustomerForAdmin(customerId, pageable);
+        } else {
+            // User can only view their own loans
+            Sort sort = Sort.by(Sort.Direction.fromString(sortDirection), sortBy);
+            Pageable pageable = PageRequest.of(page, size, sort);
+            result = loanApplicationService.getApplicationsByCustomer(customerId, pageable, username);
+        }
+
+        return ResponseEntity.ok(result);
     }
 
     // 4. Admin: Approve a loan
@@ -85,7 +118,7 @@ public class LoanApplicationController {
         return ResponseEntity.ok(loanApplicationService.rejectLoan(id, reason));
     }
 
-    // 6. Admin: Disburse a loan
+    // 6. Admin DisbursING a loan
     @PutMapping("/{id}/disburse")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "[ADMIN] Disburse a loan", description = "Admin-only. Marks an approved loan as disbursed, activating it for repayment.")
@@ -97,7 +130,7 @@ public class LoanApplicationController {
     @PostMapping("/{id}/repayments")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "[USER] Make a loan repayment", description = "Records a repayment against the given loan application and reduces its outstanding balance.")
-    public ResponseEntity<Repayment> makeRepayment(
+    public ResponseEntity<RepaymentResponseDTO> makeRepayment(
             @PathVariable Long id,
             @RequestParam Double amount) {
         return new ResponseEntity<>(

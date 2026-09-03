@@ -26,6 +26,9 @@ public class Repayment {
     @Column(name = "paid_date")
     private LocalDate paidDate;
 
+    @Column(nullable = false)
+    private String status = "PENDING"; // PENDING, PAID, OVERDUE
+
     // Constructors
     public Repayment() {}
 
@@ -51,6 +54,9 @@ public class Repayment {
 
     public LocalDate getPaidDate() { return paidDate; }
     public void setPaidDate(LocalDate paidDate) { this.paidDate = paidDate; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 
     public boolean isPaid() {
         return paidDate != null;

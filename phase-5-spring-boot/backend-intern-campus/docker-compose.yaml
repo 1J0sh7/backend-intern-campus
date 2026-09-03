@@ -22,7 +22,7 @@ services:
 
   app:
     build: .
-    container_name: customer_api
+    container_name: Loan_management_backend
     ports:
       - "8081:8081"
       - "5005:5005"
@@ -39,6 +39,7 @@ services:
       JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
     volumes:
       - ./logs:/app/logs
+      - gradle-cache:/root/.gradle   # added gradlew volume
     networks:
       - app-network
     dns:
@@ -73,6 +74,7 @@ services:
 volumes:
   postgres_data:
   grafana-storage:
+  gradle-cache:   # added gradle volume
 
 networks:
   app-network:

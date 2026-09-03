@@ -83,8 +83,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/loan-products").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/loan-products/{id}").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/loan-products/{id}").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/api/v1/loan-products").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/loan-products/{id}").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/loan-products").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/loan-products/{id}").authenticated()
 
                         // ==================== LOAN APPLICATION ENDPOINTS ====================
                         .requestMatchers(HttpMethod.POST, "/api/v1/loan-applications").authenticated()
@@ -97,7 +97,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/v1/loan-applications/{id}/disburse").hasRole("ADMIN")  // FIXED
                         .requestMatchers(HttpMethod.POST, "/api/v1/loan-applications/{id}/repayments").authenticated() // FIXED
 
-                        // ==================== ALL OTHER REQUESTS ====================
+                        // ==================== ALL OTHER REQUESTS HERE ====================
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())
