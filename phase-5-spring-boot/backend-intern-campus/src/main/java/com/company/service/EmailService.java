@@ -92,7 +92,7 @@ public class EmailService {
     public void sendLoanDisbursementEmail(String to, LoanApplication loanApplication) {
         log.info("Sending loan disbursement email to: {}", to);
 
-        String subject = "💰 Your Loan Has Been Disbursed!";
+        String subject = " Your Loan Has Been Disbursed!";
 
         // Get safe values
         String name = getSafeName(loanApplication);
@@ -257,6 +257,8 @@ public class EmailService {
     }
 
     private String getSafeRemainingBalance(LoanApplication application) {
-        return application.getRemainingBalance() != null ? application.getRemainingBalance().toString() : "0.00";
+        return application.getRemainingBalance() != null
+                ? application.getRemainingBalance().setScale(2, java.math.RoundingMode.HALF_UP).toPlainString()
+                : "0.00";
     }
 }

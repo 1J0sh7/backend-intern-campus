@@ -237,3 +237,43 @@ If email-related behavior is being tested, use valid SendGrid configuration for 
 ├── src/test/java
 └── README.md
 ```
+
+
+## Repayment Model
+
+The system uses a **dynamic minimum payment** model:
+
+### Core Rules
+
+1. **Interest Calculation** — Interest is calculated on disbursement:
+   totalPayable = principal + (principal × interestRate / 100)
+
+   #
+
+2. **Monthly Minimum Payment** — Calculated dynamically:
+   monthlyMinimum = remainingBalance / remainingMonths
+
+#
+
+3. **Payment Validation**:
+- Payment must be ≥ monthlyMinimum
+- Payment must be ≤ remainingBalance
+- Payment must be > 0
+#
+4. **Loan Status**:
+- **DISBURSED** — Loan is active, first payment not yet made
+- **ACTIVE** — Repayments in progress
+- **COMPLETED** — Fully repaid (remainingBalance = 0)
+- **OVERDUE** — Term ended with positive balance
+#
+5. **Repayment Flow**:
+- User makes a payment
+- System validates amount
+- Remaining balance is reduced
+- If balance = 0 → loan becomes COMPLETED
+- If first payment → loan becomes ACTIVE
+#
+6. **Schedule**:
+- No scheduled installments are generated in the database
+- Only actual payment transactions are stored
+- Minimum payment adjusts dynamically with each payment

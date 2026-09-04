@@ -168,7 +168,7 @@ public class LoanApplicationService {
         LoanApplication saved = loanApplicationRepository.save(application);
         saveHistory(saved, null, LoanStatus.PENDING, username, "Loan application submitted");
 
-        // ✅ Email OUTSIDE transaction
+        //  Email OUTSIDE transaction
         try {
             emailService.sendLoanCreationEmail(customer.getEmail(), saved);
         } catch (Exception e) {
@@ -197,7 +197,7 @@ public class LoanApplicationService {
 
         LoanApplication saved = loanApplicationRepository.save(application);
 
-        // ✅ Email OUTSIDE transaction
+        //  Email OUTSIDE transaction
         try {
             emailService.sendLoanApprovalEmail(application.getCustomer().getEmail(), saved);
         } catch (Exception e) {
@@ -227,7 +227,7 @@ public class LoanApplicationService {
 
         LoanApplication saved = loanApplicationRepository.save(application);
 
-        // ✅ Email OUTSIDE transaction
+        //  Email OUTSIDE transaction
         try {
             emailService.sendLoanRejectionEmail(application.getCustomer().getEmail(), saved, reason);
         } catch (Exception e) {
@@ -264,7 +264,7 @@ public class LoanApplicationService {
 
         LoanApplication saved = loanApplicationRepository.save(application);
 
-        // ✅ Email OUTSIDE transaction
+        //  Email OUTSIDE transaction
         try {
             emailService.sendLoanDisbursementEmail(application.getCustomer().getEmail(), saved);
         } catch (Exception e) {
@@ -354,7 +354,7 @@ public class LoanApplicationService {
 
         loanApplicationRepository.save(application);
 
-        // ✅ Email OUTSIDE transaction
+        //  Email OUTSIDE transaction
         try {
             emailService.sendRepaymentConfirmationEmail(application.getCustomer().getEmail(), application, saved);
         } catch (Exception e) {
